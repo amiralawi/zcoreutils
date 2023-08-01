@@ -1,7 +1,7 @@
-const String = @import("./zig-string.zig").String;
 const std = @import("std");
 const min = std.math.min;
 const max = std.math.max;
+const os = std.os;
 
 pub const u8str = struct {
     pub fn lessThan(context: void, a: []const u8, b: []const u8) bool {
@@ -75,6 +75,19 @@ pub const char = struct {
         };
     }
 };
+
+pub const terminal = struct {
+    pub fn getSize() !Vec2i {
+        var ws: os.linux.winsize = undefined;
+        var ret = os.linux.ioctl(os.STDOUT_FILENO, os.linux.T.IOCGWINSZ, @ptrToInt(&ws));
+        if (ret == -1) {
+            return error.ioctl;
+        }
+        return Vec2i{ .x = ws.ws_col, .y = ws.ws_row };
+    }
+};
+
+pub const Vec2i = struct { x: i32 = 0, y: i32 = 0 };
 
 pub fn gnomeSort(comptime T: type, items: []T, context: anytype, comptime lessThan: fn (context: @TypeOf(context), lhs: T, rhs: T) bool) void {
     var n = items.len;

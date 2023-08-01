@@ -12,15 +12,15 @@ In order of (approximate) precedence:
 4. Minimize code size
 
 # Completed / near-complete utilities
-none yet
+* zecho - needs escape character support
 
 # In progress utilities
-* ls
+* zls
  
 # Planned utilities
 In order of (approximate) precedence:
 
-1. echo
-2. touch
-3. cp
-4. mv
+1. ztouch
+2. zmkdir
+3. zcp
+4. zmv
