@@ -1,8 +1,8 @@
 const util = @import("./util.zig");
 const std = @import("std");
 
-fn append_cli_args(container: *std.ArrayList([]const u8)) !void {
-    var argiter = std.process.args();
+fn append_cli_args(container: *std.ArrayList([]const u8), allocator: std.mem.Allocator) !void {
+    var argiter = try std.process.argsWithAllocator(allocator);
     while (argiter.next()) |arg| {
         try container.append(arg);
     }
@@ -74,7 +74,7 @@ pub fn main() !void {
     // get CLI args
     args = std.ArrayList([]const u8).init(allocator);
     args_to_print = std.ArrayList([]const u8).init(allocator);
-    try append_cli_args(&args);
+    try append_cli_args(&args, allocator);
 
     try parse_cli_args();
 
