@@ -81,12 +81,83 @@ pub fn main() !void {
     // now do the echoing
     // TODO: add support for escape characters (options -e and -E)
     var n_printable = args_to_print.items.len;
+    var suppress_flag = false;
     for (args_to_print.items, 1..) |arg, index| {
         var suffix = if (index == n_printable) "" else " ";
-        try stdout.print("{s}{s}", .{ arg, suffix });
-    }
+        
+        var escape_stack : [16]u8 = undefined;
+        var escape_stack_size: i32 = 0;
 
-    if (options_n == false) {
+        if(options_e){
+            for(arg) |ch|{
+                if(escape_stack_size == 0){
+                    if(ch == '\\'){
+                        escape_stack_size = 1;
+                        escape_stack[0] = '\\';
+                    }
+                    else{
+                        try stdout.print("{c}", .{ch});
+                    }
+                }
+                else if(escape_stack_size == 1){
+                    switch(ch){
+                        'a'  => { try stdout.print("{c}", .{0x07}); escape_stack_size = 0; },
+                        'b'  => { try stdout.print("{c}", .{0x08}); escape_stack_size = 0; },
+                        
+                        // TODO - not quite sure how to handle \e and \E characters - need to do more research
+                        //'e'  => { try stdout.print("\a", .{}); escape_stack_size = 0; },
+                        //'E'  => { try stdout.print("\a", .{}); escape_stack_size = 0; },
+                        'f'  => { try stdout.print("{c}", .{0xFF}); escape_stack_size = 0; },
+                        'n'  => { try stdout.print("\n", .{}); escape_stack_size = 0; },
+                        'r'  => { try stdout.print("\r", .{}); escape_stack_size = 0; },
+                        't'  => { try stdout.print("\t", .{}); escape_stack_size = 0; },
+                        'v'  => { try stdout.print("{c}", .{0x7C}); escape_stack_size = 0; },
+                        '\\' => { try stdout.print("{c}", .{'\\'}); escape_stack_size = 0; } ,
+
+                        'c'  => { 
+                            suppress_flag = true;
+                            escape_stack_size = 0;
+                            return;
+                        },
+
+                        // TODO - these all need implementation
+                        // octal \0nnn, n can be 0 to 3 octal digits
+                        '0' => {},
+
+                        // hexadecimal \xHH, H can be 1 or 2 hex digits
+                        'x' => {},
+
+                        // unicode \uHHHH, H can be 1 to 4 hex digits
+                        'u' => {},
+
+                        // unicode \uHHHHHHHH, H can be 1 to 8 hex digits
+                        'U' => {},
+                        
+                        else => { escape_stack_size = 0; }
+
+                        
+                    }
+
+
+                }
+                else if(escape_stack_size > 1){
+                    // TODO - handle this better
+                    escape_stack_size = 0;
+                }
+                
+                
+            }
+
+        }
+        else{
+            try stdout.print("{s}", .{ arg });
+        }
+
+        try stdout.print("{s}", .{suffix});
+    }
+    
+
+    if (options_n == false and suppress_flag == false) {
         try stdout.print("\n", .{});
     }
 }

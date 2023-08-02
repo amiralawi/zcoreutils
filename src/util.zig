@@ -56,14 +56,28 @@ pub const char = struct {
             else => false,
         };
     }
-    pub fn isdigit(arg: u8) bool {
+    pub fn isdecimal(arg: u8) bool {
         return switch (arg) {
             '0'...'9' => true,
             else => false,
         };
     }
+    pub fn isoctal(arg: u8) bool {
+        return switch (arg) {
+            '0'...'7' => true,
+            else => false,
+        };
+    }
+    pub fn ishex(arg: u8) bool {
+        return switch (arg) {
+            '0'...'9' => true,
+            'a'...'f' => true,
+            'A'...'F' => true,
+            else => false,
+        };
+    }
     pub fn isalnum(arg: u8) bool {
-        return isalpha(arg) or isdigit(arg);
+        return isalpha(arg) or isdecimal(arg);
     }
     // pub fn isprintable(arg: u8) bool {
     //     _ = arg;
