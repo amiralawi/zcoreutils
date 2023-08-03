@@ -9,27 +9,6 @@ fn append_cli_args(container: *std.ArrayList([]const u8), allocator: std.mem.All
     }
 }
 
-
-var n_printed:usize = 0;
-pub fn counter_reset() void {
-    n_printed = 0;
-}
-
-pub fn print_until_nch(buffer: []const u8, n: usize, ch: u8) !bool {
-    var i: usize = 0;
-    while(i < buffer.len and n_printed < n){
-        if(buffer[i] == ch){
-            n_printed += 1;
-        }
-        i += 1;
-    }
-
-    try stdout.print("{s}", .{ buffer[0..i] });
-
-    return n < n_printed;
-
-}
-
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -41,24 +20,23 @@ pub fn main() !void {
 
     var path_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
 
-    var n_lines_max: usize = 10;
     const readbuffer_size = 2048;
     var readbuffer: [readbuffer_size]u8 = undefined;
 
 
     var exe_name = args.items[0];
-    for(args.items[1..], 0..) |filename, i| {
+    for(args.items[1..]) |filename| {
         // TODO - handle CLI options
 
         // 1 - open file
         var pathstr = std.fs.realpath(filename, &path_buffer) catch |err| {
             switch(err){
                 std.os.RealPathError.FileNotFound => {
-                    try stdout.print("{s}: cannot open '{s}' for reading: No such file or directory\n", .{exe_name, filename});
+                    try stdout.print("{s}: {s}: No such file or directory\n", .{exe_name, filename});
                 },
                 else => {
-                    try stdout.print("{s}: cannot open '{s}' for reading: {any}\n", .{exe_name, filename, err});
-                },
+                    try stdout.print("{s}: {s}: {any}\n", .{exe_name, filename, err});
+                }
             }
             continue;
         };
@@ -66,31 +44,25 @@ pub fn main() !void {
         var file = std.fs.openFileAbsolute(pathstr, .{}) catch |err|{
             switch(err){
                 std.fs.File.OpenError.FileNotFound => {
-                    try stdout.print("{s}: cannot open '{s}' for reading: No such file or directory\n", .{exe_name, filename});
+                    try stdout.print("{s}: {s}: No such file or directory\n", .{exe_name, filename});
                 },
                 else => {
-                    try stdout.print("{s}: cannot open '{s}' for reading: {any}\n", .{exe_name, filename, err});
-                },
+                    try stdout.print("{s}: {s}: {any}\n", .{exe_name, filename, err});
+                }
             }
             continue;
         };
         defer file.close();
         
-        // 2 - print filename if we have more than one file
-        if(args.items.len > 2){
-            var prefix = if(i > 0) "\n" else "";
-            try stdout.print("{s}==> {s} <==\n", .{prefix, filename});
-        }
 
-        // 3 - read file, print
+        // 2 - read file & print
         var finished = false;
         while(!finished){
             var nread = try file.read(&readbuffer);
             var readslice = readbuffer[0..nread];
+            try stdout.print("{s}", .{ readslice });
 
-            var n_complete = try print_until_nch(readslice, n_lines_max, '\n');
-            finished = n_complete or nread == 0;
+            finished = (nread == 0);
         }
-        counter_reset();
     }
 }

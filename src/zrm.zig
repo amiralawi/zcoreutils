@@ -42,9 +42,8 @@ pub fn main() !void {
     try append_cli_args(&args, heapalloc);
 
     const cwd = std.fs.cwd();
-    for(args.items[1..]) |dirpath| {
+    for(args.items[1..]) |filename| {
         // TODO - handle CLI options
-
-        try cwd.makeDir(dirpath);
+        try cwd.deleteFile(filename);
     }
 }

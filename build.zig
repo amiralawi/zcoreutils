@@ -57,6 +57,74 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe_ztail);
 
+    const exe_zcat = b.addExecutable(.{
+        .name = "zcat",
+        .root_source_file = .{ .path = "src/zcat.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zcat);
+
+
+    const exe_ztouch = b.addExecutable(.{
+        .name = "ztouch",
+        .root_source_file = .{ .path = "src/ztouch.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_ztouch);
+
+    const exe_zmkdir = b.addExecutable(.{
+        .name = "zmkdir",
+        .root_source_file = .{ .path = "src/zmkdir.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zmkdir);
+
+
+    const exe_zrm = b.addExecutable(.{
+        .name = "zrm",
+        .root_source_file = .{ .path = "src/zrm.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zrm);
+
+    const exe_zrmdir = b.addExecutable(.{
+        .name = "zrmdir",
+        .root_source_file = .{ .path = "src/zrmdir.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zrmdir);
+
+    const exe_zcp = b.addExecutable(.{
+        .name = "zcp",
+        .root_source_file = .{ .path = "src/zcp.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zcp);
+
+
+    const exe_zmv = b.addExecutable(.{
+        .name = "zmv",
+        .root_source_file = .{ .path = "src/zmv.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zmv);
+
+    const exe_zsleep = b.addExecutable(.{
+        .name = "zsleep",
+        .root_source_file = .{ .path = "src/zsleep.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zsleep);
+
+
     
 
     // This *creates* a RunStep in the build graph, to be executed when another

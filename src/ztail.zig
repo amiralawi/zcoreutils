@@ -35,12 +35,33 @@ pub fn main() !void {
 
         // 1 - open file
         var pathstr = std.fs.realpath(filename, &path_buffer) catch |err| {
-            try stdout.print("{s}: cannot open '{s}' for reading: {any}\n", .{exe_name, filename, err});
+            switch(err){
+                std.os.RealPathError.FileNotFound => {
+                    try stdout.print("{s}: cannot open '{s}' for reading: No such file or directory\n", .{exe_name, filename});
+                },
+                else => {
+                    try stdout.print("{s}: cannot open '{s}' for reading: {any}\n", .{exe_name, filename, err});
+                },
+            }
             continue;
         };
 
         var file = std.fs.openFileAbsolute(pathstr, .{}) catch |err|{
-            try stdout.print("{s}: cannot open '{s}' for reading: {any}\n", .{exe_name, filename, err});
+            switch(err){
+                std.fs.File.OpenError.FileNotFound => {
+                    try stdout.print("{s}: cannot open '{s}' for reading: No such file or directory\n", .{exe_name, filename});
+                },
+                else => {
+                    try stdout.print("{s}: cannot open '{s}' for reading: {any}\n", .{exe_name, filename, err});
+                },
+            }switch(err){
+                std.fs.File.OpenError.FileNotFound => {
+                    try stdout.print("{s}: cannot open '{s}' for reading: No such file or directory\n", .{exe_name, filename});
+                },
+                else => {
+                    try stdout.print("{s}: cannot open '{s}' for reading: {any}\n", .{exe_name, filename, err});
+                },
+            }
             continue;
         };
         defer file.close();
@@ -52,6 +73,7 @@ pub fn main() !void {
         }
 
         // 3 - read file, find all line numbers & calculate filesize
+        // TODO - change this to read backwards starting from EOF
         var i_ch: usize = 0;
         var finished = false;
         var filesize: usize = 0;
@@ -71,12 +93,11 @@ pub fn main() !void {
         // 4 - calculate file location to start printing from
         var i_printstart: usize = 0;
         if(linenumbers.items.len != 0){
-            var j = linenumbers.items.len - n_lines_max - 1;
-            if(j < 0){
+            if(linenumbers.items.len < 1 + n_lines_max){
                 i_printstart = 0;
             }
             else{
-                i_printstart = linenumbers.items[j];
+                i_printstart = linenumbers.items[linenumbers.items.len - n_lines_max - 1];
                 // i_printstart points to the nth last '\n' -> this character is technically the end of the 
                 // preceding line and should not be printed.  Need to increment i_printstart, but also need
                 // to guard against edge-case where the last character in file is also '\n' and nlines = 1

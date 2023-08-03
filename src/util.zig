@@ -23,6 +23,11 @@ pub const u8str = struct {
         return false;
     }
 
+    pub fn strcmp(a: []const u8, b:[]const u8) bool {
+        // opposite (now correct) polarity to c-strcmp
+        return std.mem.eql(u8, a, b);
+    }
+
     pub fn startsWith(str: []const u8, prefix: []const u8) bool {
         if (prefix.len > str.len) {
             return false;
@@ -46,6 +51,51 @@ pub const u8str = struct {
             }
         }
         return false;
+    }
+
+    pub fn findChar(str: []const u8, ch: u8) usize {
+        for(str, 0..) |e, i| {
+            if(e == ch){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    pub fn sliceLine(str: []const u8) []const u8 {
+        for(str, 1..) |e, i| {
+            if(e == '\n'){
+                return str[0..i];
+            }
+        }
+        return str;
+    }
+    pub fn sliceStrip(str: []const u8) []const u8 {
+        var str_rstrip = sliceRstrip(str);
+        for(str_rstrip, 0..) |e, i| {
+            if(!char.isSpace(e)){
+                return str_rstrip[i..];
+            }
+        }
+        return str_rstrip[0..0];
+    }
+    pub fn sliceRstrip(str: []const u8) []const u8 {
+        var i: usize = str.len;
+        while (i > 0) {
+            i -= 1;
+            if(!char.isSpace(str[i])){
+                return str[0..i+1];
+            }
+        }
+        return str[0..0];
+    }
+    pub fn sliceLineRstrip(str: []const u8) []const u8 {
+        var line = sliceLine(str);
+        return sliceRstrip(line);
+    }
+    pub fn sliceLineStrip(str: []const u8) []const u8 {
+        var line = sliceLineRstrip(str);
+        return sliceStrip(line);
     }
 };
 
@@ -77,16 +127,12 @@ pub const char = struct {
     pub fn isAlnum(arg: u8) bool {
         return isAlpha(arg) or isDigit(arg);
     }
-    // pub fn isprintable(arg: u8) bool {
-    //     _ = arg;
-    // }
     pub fn isSpace(arg: u8) bool {
         return switch (arg) {
-            ' ', '\t' => true,
+            ' ', '\t', '\r', '\n' => true,
             else => false,
         };
     }
-
     pub fn getDecimalValue(arg: u8) u8 {
         switch(arg){
             '0'...'9' => { return arg - '0'; },
@@ -100,14 +146,12 @@ pub const char = struct {
             'A'...'F' => { return arg - 'A' + 10; },
             else => { return 0; },
         }
-
     }
     pub fn getOctalValue(arg: u8) u8 {
         switch(arg){
             '0'...'7' => { return arg - '0'; },
             else => { return 0; },
         }
-
     }
 };
 
