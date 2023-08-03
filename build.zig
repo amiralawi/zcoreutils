@@ -30,21 +30,39 @@ pub fn build(b: *std.Build) void {
     // step when running `zig build`).
     b.installArtifact(exe);
 
+
+    // additional executables
     const exe_zecho = b.addExecutable(.{
         .name = "zecho",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
         .root_source_file = .{ .path = "src/zecho.zig" },
         .target = target,
         .optimize = optimize,
     });
     b.installArtifact(exe_zecho);
 
+
+    const exe_zhead = b.addExecutable(.{
+        .name = "zhead",
+        .root_source_file = .{ .path = "src/zhead.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zhead);
+
+    const exe_ztail = b.addExecutable(.{
+        .name = "ztail",
+        .root_source_file = .{ .path = "src/ztail.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_ztail);
+
+    
+
     // This *creates* a RunStep in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish
     // such a dependency.
     const run_cmd = b.addRunArtifact(exe);
-    //const run_cmd = b.addRunArtifact(exe_zecho);
 
     // By making the run step depend on the install step, it will be run from the
     // installation directory rather than directly from within the cache directory.

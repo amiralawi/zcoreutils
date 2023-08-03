@@ -305,7 +305,7 @@ pub fn main() !void {
         if (arg.len > 1 and util.u8str.startsWith(arg, "-") and util.u8str.countChar(arg, '-') == 1) {
             var is_all_alpha: bool = true;
             for (arg[1..]) |c| {
-                is_all_alpha = is_all_alpha and util.char.isalpha(c);
+                is_all_alpha = is_all_alpha and util.char.isAlpha(c);
             }
             if (!is_all_alpha) {
                 continue;

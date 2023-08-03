@@ -1,5 +1,6 @@
 const util = @import("./util.zig");
 const std = @import("std");
+const stdout = std.io.getStdOut().writer();
 
 fn append_cli_args(container: *std.ArrayList([]const u8), allocator: std.mem.Allocator) !void {
     var argiter = try std.process.argsWithAllocator(allocator);
@@ -8,33 +9,29 @@ fn append_cli_args(container: *std.ArrayList([]const u8), allocator: std.mem.All
     }
 }
 
-var options_n = false;
-var options_E = false;
-var options_e = false;
+
+var append_newline = false;
+var handle_escapes = false;
 var args: std.ArrayList([]const u8) = undefined;
 var args_to_print: std.ArrayList([]const u8) = undefined;
 
 fn parse_cli_args() !void {
     for (args.items[1..]) |arg| {
-        //if (arg.len > 1 and util.string.startsWith(&arg, "-") and util.string.countChar(&arg, '-') == 1) {
         if (util.u8str.startsWith(arg, "-")) {
             var arg_is_printable = false;
-            var loop_has_n = false;
-            var loop_has_E = false;
-            var loop_has_e = false;
+            var loop_newline = append_newline;
+            var loop_escapes = handle_escapes;
 
             for (arg[1..]) |ch| {
                 switch (ch) {
                     'n' => {
-                        loop_has_n = true;
+                        loop_newline = true;
                     },
                     'e' => {
-                        loop_has_e = true;
-                        loop_has_E = false;
+                        loop_escapes = true;
                     },
                     'E' => {
-                        loop_has_E = true;
-                        loop_has_e = false;
+                        loop_escapes = false;
                     },
                     else => {
                         arg_is_printable = true;
@@ -45,17 +42,8 @@ fn parse_cli_args() !void {
             if (arg_is_printable) {
                 try args_to_print.append(arg);
             } else {
-                if (loop_has_n) {
-                    options_n = true;
-                }
-                if (loop_has_E) {
-                    options_E = true;
-                    options_e = false;
-                }
-                if (loop_has_e) {
-                    options_E = false;
-                    options_e = true;
-                }
+                append_newline = loop_newline;
+                handle_escapes = loop_escapes;
             }
         } else {
             try args_to_print.append(arg);
@@ -63,11 +51,147 @@ fn parse_cli_args() !void {
     }
 }
 
-pub fn main() !void {
-    const stdout = std.io.getStdOut().writer();
+const escape_state = enum {
+    unescaped,
+    escape_started,
+    octal,
+    hexadecimal,
+    unicode_little,
+    unicode_big,
+};
 
+pub fn print_octal_char() !void {
+    var accum: u32 = 0;
+    while(ebuffer.read()) |ch| {
+        accum = 8*accum + util.char.getOctalValue(ch);
+    }
+    try stdout.print("{c}", .{ @truncate(u8, accum)} );
+}
+
+pub fn print_hex_char() !void {
+    var accum: u32 = 0;
+    while(ebuffer.read()) |ch| {
+        accum = 16*accum + util.char.getHexValue(ch);
+    }
+    try stdout.print("{c}", .{ @truncate(u8, accum)} );
+}
+
+pub fn print_unicode_char() !void {
+}
+
+var e_state: escape_state = .unescaped;
+
+var ebuffer_data: [16]u8 = undefined;
+var ebuffer_fba = std.heap.FixedBufferAllocator.init(&ebuffer_data);
+var ebuffer: std.RingBuffer = undefined;
+
+var estack : [16]u8 = undefined;
+var istack : usize = 0;
+var suppress_flag = false;
+
+pub fn process_char(ch: u8) !void {
+    switch(e_state){
+        .unescaped => {
+            if(ch == '\\'){
+                e_state = .escape_started;
+            }
+            else{
+                try stdout.print("{c}", .{ch});
+            }
+        },
+        .escape_started => {
+            switch(ch){
+                'a'  => { try stdout.print("{c}", .{0x07});  e_state = .unescaped; },
+                'b'  => { try stdout.print("{c}", .{0x08});  e_state = .unescaped; },
+                
+                // TODO - not quite sure how to handle \e and \E characters - need to do more research
+                //'e'  => { try stdout.print("\a", .{}); escape_stack_size = 0; },
+                //'E'  => { try stdout.print("\a", .{}); escape_stack_size = 0; },
+                
+                'f'  => { try stdout.print("{c}", .{0xFF});  e_state = .unescaped; },
+                'n'  => { try stdout.print("\n", .{});  e_state = .unescaped; },
+                'r'  => { try stdout.print("\r", .{});  e_state = .unescaped; },
+                't'  => { try stdout.print("\t", .{});  e_state = .unescaped; },
+                'v'  => { try stdout.print("{c}", .{0x7C});  e_state = .unescaped; },
+                '\\' => { try stdout.print("{c}", .{'\\'});  e_state = .unescaped; } ,
+                '0'  => { e_state = .octal; },
+                'x'  => { e_state = .hexadecimal; },
+                'u'  => { e_state = .unicode_little; },
+                'U'  => { e_state = .unicode_big; },
+
+                'c'  => { 
+                    suppress_flag = true;
+                    e_state = .unescaped;
+                    return;
+                },
+                
+                else => { e_state = .unescaped; }
+            }
+        },
+        .octal => {
+            // octal \0nnn, n can be 0 to 3 octal digits
+            if(!util.char.isOctal(ch)){
+                try print_octal_char();
+                e_state = .unescaped;
+                try process_char(ch);
+            }
+            else{
+                try ebuffer.write(ch);
+                if(ebuffer.len() == 3){
+                    try print_octal_char();
+                    e_state = .unescaped;
+                }    
+            }
+        },
+        .hexadecimal => {
+            // hexadecimal \xHH, H can be 1 or 2 hex digits
+            if(!util.char.isHex(ch)){
+                try print_hex_char();
+                e_state = .unescaped;
+                try process_char(ch);
+            }
+            else{
+                try ebuffer.write(ch);
+                if(ebuffer.len() == 2){
+                    try print_hex_char();
+                    e_state = .unescaped;
+                }    
+            }
+        },
+        .unicode_little => {
+            // TODO - finish placeholder
+            // unicode \uHHHH, H can be 1 to 4 hex digits
+            e_state = .unescaped; 
+        },
+        .unicode_big => {
+            // TODO - finish placeholder
+            // unicode \UHHHHHHHH, H can be 1 to 8 hex digits
+                e_state = .unescaped; 
+        },
+    }  
+
+    
+}
+
+pub fn print_dangling_escape_sequences() !void {
+    switch(e_state){
+        .octal =>{ try print_octal_char(); },
+        .hexadecimal =>{ try print_hex_char(); },
+        .unicode_little, .unicode_big =>{
+            try print_unicode_char();
+        },
+        else => {}
+    }
+}
+
+pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
+
+    var ebuff_alloc = ebuffer_fba.allocator();
+    ebuffer = try std.RingBuffer.init(ebuff_alloc, 16);
+    defer ebuffer.deinit(ebuff_alloc);
+    
 
     const allocator = arena.allocator();
 
@@ -77,87 +201,34 @@ pub fn main() !void {
     try append_cli_args(&args, allocator);
 
     try parse_cli_args();
-
-    // now do the echoing
-    // TODO: add support for escape characters (options -e and -E)
     var n_printable = args_to_print.items.len;
-    var suppress_flag = false;
+    
+    // dumb path
+    if(!handle_escapes){
+        for (args_to_print.items, 1..) |arg, index| {
+            var suffix = if (index == n_printable) "" else " ";
+            try stdout.print("{s}{s}", .{ arg, suffix });
+        }
+        if (append_newline == false) {
+            try stdout.print("\n", .{});
+        }
+        return;
+    }
+
+    // escape sequence path
     for (args_to_print.items, 1..) |arg, index| {
         var suffix = if (index == n_printable) "" else " ";
         
-        var escape_stack : [16]u8 = undefined;
-        var escape_stack_size: i32 = 0;
-
-        if(options_e){
-            for(arg) |ch|{
-                if(escape_stack_size == 0){
-                    if(ch == '\\'){
-                        escape_stack_size = 1;
-                        escape_stack[0] = '\\';
-                    }
-                    else{
-                        try stdout.print("{c}", .{ch});
-                    }
-                }
-                else if(escape_stack_size == 1){
-                    switch(ch){
-                        'a'  => { try stdout.print("{c}", .{0x07}); escape_stack_size = 0; },
-                        'b'  => { try stdout.print("{c}", .{0x08}); escape_stack_size = 0; },
-                        
-                        // TODO - not quite sure how to handle \e and \E characters - need to do more research
-                        //'e'  => { try stdout.print("\a", .{}); escape_stack_size = 0; },
-                        //'E'  => { try stdout.print("\a", .{}); escape_stack_size = 0; },
-                        'f'  => { try stdout.print("{c}", .{0xFF}); escape_stack_size = 0; },
-                        'n'  => { try stdout.print("\n", .{}); escape_stack_size = 0; },
-                        'r'  => { try stdout.print("\r", .{}); escape_stack_size = 0; },
-                        't'  => { try stdout.print("\t", .{}); escape_stack_size = 0; },
-                        'v'  => { try stdout.print("{c}", .{0x7C}); escape_stack_size = 0; },
-                        '\\' => { try stdout.print("{c}", .{'\\'}); escape_stack_size = 0; } ,
-
-                        'c'  => { 
-                            suppress_flag = true;
-                            escape_stack_size = 0;
-                            return;
-                        },
-
-                        // TODO - these all need implementation
-                        // octal \0nnn, n can be 0 to 3 octal digits
-                        '0' => {},
-
-                        // hexadecimal \xHH, H can be 1 or 2 hex digits
-                        'x' => {},
-
-                        // unicode \uHHHH, H can be 1 to 4 hex digits
-                        'u' => {},
-
-                        // unicode \uHHHHHHHH, H can be 1 to 8 hex digits
-                        'U' => {},
-                        
-                        else => { escape_stack_size = 0; }
-
-                        
-                    }
-
-
-                }
-                else if(escape_stack_size > 1){
-                    // TODO - handle this better
-                    escape_stack_size = 0;
-                }
-                
-                
-            }
-
+        for(arg) |ch|{
+            try process_char(ch);           
         }
-        else{
-            try stdout.print("{s}", .{ arg });
-        }
+
+        try print_dangling_escape_sequences();
 
         try stdout.print("{s}", .{suffix});
     }
     
-
-    if (options_n == false and suppress_flag == false) {
+    if (append_newline == false and suppress_flag == false) {
         try stdout.print("\n", .{});
     }
 }

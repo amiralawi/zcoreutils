@@ -41,7 +41,7 @@ pub const u8str = struct {
 
     pub fn has_space(str: []const u8) bool {
         for (str) |c| {
-            if (char.isspace(c)) {
+            if (char.isSpace(c)) {
                 return true;
             }
         }
@@ -50,43 +50,64 @@ pub const u8str = struct {
 };
 
 pub const char = struct {
-    pub fn isalpha(arg: u8) bool {
+    pub fn isAlpha(arg: u8) bool {
         return switch (arg) {
             'a'...'z', 'A'...'Z' => true,
             else => false,
         };
     }
-    pub fn isdecimal(arg: u8) bool {
+    pub fn isDigit(arg: u8) bool {
         return switch (arg) {
             '0'...'9' => true,
             else => false,
         };
     }
-    pub fn isoctal(arg: u8) bool {
+    pub fn isOctal(arg: u8) bool {
         return switch (arg) {
             '0'...'7' => true,
             else => false,
         };
     }
-    pub fn ishex(arg: u8) bool {
+    pub fn isHex(arg: u8) bool {
         return switch (arg) {
-            '0'...'9' => true,
-            'a'...'f' => true,
-            'A'...'F' => true,
+            '0'...'9', 'a'...'f', 'A'...'F' => true,
             else => false,
         };
     }
-    pub fn isalnum(arg: u8) bool {
-        return isalpha(arg) or isdecimal(arg);
+    pub fn isAlnum(arg: u8) bool {
+        return isAlpha(arg) or isDigit(arg);
     }
     // pub fn isprintable(arg: u8) bool {
     //     _ = arg;
     // }
-    pub fn isspace(arg: u8) bool {
+    pub fn isSpace(arg: u8) bool {
         return switch (arg) {
             ' ', '\t' => true,
             else => false,
         };
+    }
+
+    pub fn getDecimalValue(arg: u8) u8 {
+        switch(arg){
+            '0'...'9' => { return arg - '0'; },
+            else => { return 0; },
+        }
+    }
+    pub fn getHexValue(arg: u8) u8 {
+        switch(arg){
+            '0'...'9' => { return arg - '0'; },
+            'a'...'f' => { return arg - 'a' + 10; },
+            'A'...'F' => { return arg - 'A' + 10; },
+            else => { return 0; },
+        }
+
+    }
+    pub fn getOctalValue(arg: u8) u8 {
+        switch(arg){
+            '0'...'7' => { return arg - '0'; },
+            else => { return 0; },
+        }
+
     }
 };
 
