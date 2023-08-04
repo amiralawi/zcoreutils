@@ -1,4 +1,4 @@
-const util = @import("./util.zig");
+const util = @import("./zcorelib/util.zig");
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 
@@ -78,10 +78,7 @@ pub fn main() !void {
             return;
         }
 
-        // TODO - this method doesn't actually preserve original file timestamp/user properties, need to
-        // do more research
-        try cwd.copyFile(src, cwd, dest, .{});
-        try cwd.deleteFile(src);
+        try cwd.rename(src, dest);
         return;
     }
     
@@ -94,13 +91,11 @@ pub fn main() !void {
     defer dest_dir.close();
 
     for(filenames.items[0..nfiles]) |src| {
-        var dest = std.fs.path.basename(src);
+        var filename = std.fs.path.basename(src);
+        var dest_parts = [2][]const u8{dest_dirname, filename};
+        var dest = try std.fs.path.join(heapalloc, &dest_parts);
 
-        // TODO - this method doesn't actually preserve original file timestamp/user properties, need to
-        // do more research
-        
-        try cwd.copyFile(src, dest_dir, dest, .{});
-        try cwd.deleteFile(src);
+        try cwd.rename(src, dest);
     }
 
 }

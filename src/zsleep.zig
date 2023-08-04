@@ -1,5 +1,5 @@
-const library = @import("./_library.zig");
-const util = @import("./util.zig");
+const library = @import("./zcorelib/library.zig");
+const util = @import("./zcorelib/util.zig");
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 
