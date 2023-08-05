@@ -124,6 +124,22 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe_zsleep);
 
+    const exe_zcksum = b.addExecutable(.{
+        .name = "zcksum",
+        .root_source_file = .{ .path = "src/zcksum.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zcksum);
+
+    const exe_test = b.addExecutable(.{
+        .name = "test",
+        .root_source_file = .{ .path = "src/test.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_test);
+
 
     
 

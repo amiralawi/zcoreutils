@@ -15,6 +15,7 @@ In order of (approximate) precedence:
 | Utility | Status | Notes
 | ------- | ----------- |----
 | zsleep  | complete    |
+| zcksum  | complete    |
 | zecho   | mostly done | does not currently support \e, \E, \u, \U
 | zhead   | usable      | prints 10 lines, no CLI option support yet
 | ztail   | usable      | prints 10 lines, no CLI option support yet

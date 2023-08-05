@@ -1,4 +1,4 @@
-const util = @import("./zcorelib/util.zig");
+const util = @import("./zcorecommon/util.zig");
 const std = @import("std");
 const print = std.debug.print;
 const conprint = std.debug.print;

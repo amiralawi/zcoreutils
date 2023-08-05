@@ -1,33 +1,42 @@
-const util = @import("./util.zig");
+const util = @import("./zcorecommon/util.zig");
+const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 
-fn append_cli_args(container: *std.ArrayList([]const u8), allocator: std.mem.Allocator) !void {
-    var argiter = try std.process.argsWithAllocator(allocator);
-    while (argiter.next()) |arg| {
-        try container.append(arg);
-    }
-}
+var n_lines_max: usize = 10;
 
+pub fn head_file(file: std.fs.File) !void {
+    // 3 - read file, print
+    const buffer_size = 2048;
+    var buffer: [buffer_size]u8 = undefined;
 
-var n_printed:usize = 0;
-pub fn counter_reset() void {
-    n_printed = 0;
-}
+    var finished = false;
+    var lines_printed:usize = 0;
+    while(!finished){
+        var nread = try file.read(&buffer);
+        var readslice = buffer[0..nread];
+        
 
-pub fn print_until_nch(buffer: []const u8, n: usize, ch: u8) !bool {
-    var i: usize = 0;
-    while(i < buffer.len and n_printed < n){
-        if(buffer[i] == ch){
-            n_printed += 1;
+        var print_iend: usize = readslice.len;
+        for(readslice, 1..) |ch, i|{
+            if(ch == '\n'){
+                lines_printed += 1;
+                if(lines_printed >= n_lines_max){
+                    print_iend = i;
+                    break;
+                }
+            }
         }
-        i += 1;
+
+        try stdout.print("{s}", .{ buffer[0..print_iend] });
+        
+        finished = (lines_printed >= n_lines_max) or (nread == 0);
     }
+}
 
-    try stdout.print("{s}", .{ buffer[0..i] });
-
-    return n < n_printed;
-
+pub fn is_valid_option(str: []const u8) bool {
+    _ = str;
+    return false;
 }
 
 pub fn main() !void {
@@ -37,60 +46,50 @@ pub fn main() !void {
 
 
     var args = std.ArrayList([]const u8).init(heapalloc);
-    try append_cli_args(&args, heapalloc);
-
-    var path_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
-
-    var n_lines_max: usize = 10;
-    const readbuffer_size = 2048;
-    var readbuffer: [readbuffer_size]u8 = undefined;
-
-
+    var filenames = std.ArrayList([]const u8).init(heapalloc);
+    try cli.args.appendToArrayList(&args, heapalloc);
     var exe_name = args.items[0];
-    for(args.items[1..], 0..) |filename, i| {
-        // TODO - handle CLI options
+    
+    for(args.items[1..]) |arg| {
+        if(is_valid_option(arg)){
+            // TODO - handle CLI options
+        }
+        else{
+            try filenames.append(arg);
+        }
+    }
 
+    if(filenames.items.len == 0){
+        // no file argument passed, read standard input instead
+        var stdin = std.io.getStdIn();
+        try head_file(stdin);
+        return;
+    }
+
+    var cwd = std.fs.cwd();
+    
+    for(filenames.items, 0..) |filename, i| {
         // 1 - open file
-        var pathstr = std.fs.realpath(filename, &path_buffer) catch |err| {
-            switch(err){
-                std.os.RealPathError.FileNotFound => {
-                    try stdout.print("{s}: cannot open '{s}' for reading: No such file or directory\n", .{exe_name, filename});
-                },
-                else => {
-                    try stdout.print("{s}: cannot open '{s}' for reading: {any}\n", .{exe_name, filename, err});
-                },
-            }
-            continue;
-        };
-
-        var file = std.fs.openFileAbsolute(pathstr, .{}) catch |err|{
+        var file = cwd.openFile(filename, .{}) catch |err| {
             switch(err){
                 std.fs.File.OpenError.FileNotFound => {
                     try stdout.print("{s}: cannot open '{s}' for reading: No such file or directory\n", .{exe_name, filename});
                 },
                 else => {
-                    try stdout.print("{s}: cannot open '{s}' for reading: {any}\n", .{exe_name, filename, err});
+                    try stdout.print("{s}: cannot open '{s}' for reading: {any}", .{exe_name, filename, err});
                 },
             }
             continue;
         };
         defer file.close();
         
-        // 2 - print filename if we have more than one file
+        // 2 - print filename header if we have more than one file
         if(args.items.len > 2){
             var prefix = if(i > 0) "\n" else "";
             try stdout.print("{s}==> {s} <==\n", .{prefix, filename});
         }
 
-        // 3 - read file, print
-        var finished = false;
-        while(!finished){
-            var nread = try file.read(&readbuffer);
-            var readslice = readbuffer[0..nread];
-
-            var n_complete = try print_until_nch(readslice, n_lines_max, '\n');
-            finished = n_complete or nread == 0;
-        }
-        counter_reset();
+        // 3 - print head lines for file
+        try head_file(file);
     }
 }

@@ -1,13 +1,8 @@
-const util = @import("./zcorelib/util.zig");
+const util = @import("./zcorecommon/util.zig");
+const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 
-fn append_cli_args(container: *std.ArrayList([]const u8), allocator: std.mem.Allocator) !void {
-    var argiter = try std.process.argsWithAllocator(allocator);
-    while (argiter.next()) |arg| {
-        try container.append(arg);
-    }
-}
 
 
 var append_newline = false;
@@ -198,7 +193,7 @@ pub fn main() !void {
     // get CLI args
     args = std.ArrayList([]const u8).init(allocator);
     args_to_print = std.ArrayList([]const u8).init(allocator);
-    try append_cli_args(&args, allocator);
+    try cli.args.appendToArrayList(&args, allocator);
 
     try parse_cli_args();
     var n_printable = args_to_print.items.len;
