@@ -87,6 +87,6 @@ pub fn main() !void {
         dt_accum += mult * dt_val;
     }
 
-    var ns_sleep: u64 = @floatToInt(u64, dt_accum * 1000000000.0);
+    var ns_sleep: u64 = @intFromFloat(dt_accum * 1000000000.0);
     std.time.sleep(ns_sleep);
 }

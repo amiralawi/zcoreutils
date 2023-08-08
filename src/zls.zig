@@ -2,8 +2,7 @@ const util = @import("./zcorecommon/util.zig");
 const std = @import("std");
 const print = std.debug.print;
 const conprint = std.debug.print;
-const min = std.math.min;
-const max = std.math.max;
+
 //const allocator = std.heap.page_allocator;
 
 const file_permission = struct {
@@ -50,7 +49,7 @@ fn get_directory_contents(pathname: []const u8, alloc: std.mem.Allocator) !*std.
     var list: *std.ArrayList([]const u8) = try alloc.create(std.ArrayList([]const u8));
     list.* = std.ArrayList([]const u8).init(alloc);
     while (try iter.next()) |entry| {
-        var strcpy: []const u8 = try alloc.alloc(u8, entry.name.len);
+        var strcpy: []u8 = try alloc.alloc(u8, entry.name.len);
         @memcpy(strcpy, entry.name);
         try list.append(strcpy);
     }
@@ -90,7 +89,7 @@ fn calc_longest_string(str_list: [][]const u8) usize {
 
     var width: usize = str_list[0].len;
     for (str_list) |str| {
-        width = max(width, str.len);
+        width = @max(width, str.len);
     }
     return width;
 }
@@ -102,7 +101,7 @@ fn calc_shortest_string(str_list: [][]const u8) usize {
 
     var width: usize = str_list[0].len;
     for (str_list) |str| {
-        width = min(width, str.len);
+        width = @min(width, str.len);
     }
     return width;
 }
@@ -140,10 +139,10 @@ fn calc_print_columns(w_console: usize, dir_contents: *const std.ArrayList([]con
     for (0..ncols_max) |e| {
         const cols = ncols_max - e;
         var w_line_max: usize = 0;
-        var nrows = nitems / cols + @boolToInt((nitems % cols) > 0);
+        var nrows = nitems / cols + @intFromBool((nitems % cols) > 0);
         for (0..cols) |i| {
-            const is: usize = min(i * nrows, dir_contents.items.len);
-            const ie: usize = min(is + nrows, dir_contents.items.len);
+            const is: usize = @min(i * nrows, dir_contents.items.len);
+            const ie: usize = @min(is + nrows, dir_contents.items.len);
             const longest = calc_longest_string(dir_contents.items[is..ie]);
             w_line_max += longest + len_wrap; // add wrapping
         }
@@ -178,7 +177,7 @@ const fs_grid = struct {
         ret.alloc = alloc;
         ret.nitems = dir_contents.items.len;
 
-        var nrows = ret.nitems / ncols + @boolToInt((ret.nitems % ncols) > 0);
+        var nrows = ret.nitems / ncols + @intFromBool((ret.nitems % ncols) > 0);
         ret.columns = try ret.alloc.alloc(fs_column, ncols);
         ret.rows = try ret.alloc.alloc(fs_row, nrows);
 
@@ -198,8 +197,8 @@ const fs_grid = struct {
 
         // extract column data
         for (0..ncols) |col| {
-            var col_start = min(col * nrows, dir_contents.items.len);
-            var col_end = min(col_start + nrows, dir_contents.items.len);
+            var col_start = @min(col * nrows, dir_contents.items.len);
+            var col_end = @min(col_start + nrows, dir_contents.items.len);
 
             var col_has_space = contains_str_with_space(dir_contents.items[col_start..col_end]);
             var col_max_width = calc_longest_string(dir_contents.items[col_start..col_end]);
@@ -246,7 +245,7 @@ const fs_grid = struct {
 
 fn print_in_columns(ncols: usize, dir_contents: *const std.ArrayList([]const u8)) void {
     var nitems = dir_contents.items.len;
-    var nrows = nitems / ncols + @boolToInt((nitems % ncols) > 0);
+    var nrows = nitems / ncols + @intFromBool((nitems % ncols) > 0);
 
     var process_spaces = false;
     for (dir_contents.items) |e| {
@@ -266,8 +265,8 @@ fn print_in_columns(ncols: usize, dir_contents: *const std.ArrayList([]const u8)
                 continue;
             }
 
-            var col_start = min(col * nrows, dir_contents.items.len);
-            var col_end = min(col_start + nrows, dir_contents.items.len);
+            var col_start = @min(col * nrows, dir_contents.items.len);
+            var col_end = @min(col_start + nrows, dir_contents.items.len);
 
             var wrapchar = wrapchar_nospace;
             if (util.u8str.has_space(dir_contents.items[i])) {

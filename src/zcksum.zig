@@ -46,7 +46,8 @@ pub fn hash_file(file: std.fs.File) !crcHashResult {
     
     // append the byte-count in little-endian format, discard trailing zero bytes
     var nread_le = std.mem.nativeToLittle(usize, n_tot);
-    var nread_le_bytearr = @bitCast([@sizeOf(usize)]u8, nread_le);
+    var nread_le_bytearr: [@sizeOf(usize)]u8 = @bitCast(nread_le);
+    //var nread_le_bytearr = @bitCast([@sizeOf(usize)]u8, nread_le);
     var j: usize  = @sizeOf(usize) - 1;
     while(j > 0 and nread_le_bytearr[j] == 0){
         j -= 1;

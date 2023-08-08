@@ -60,7 +60,8 @@ pub fn print_octal_char() !void {
     while(ebuffer.read()) |ch| {
         accum = 8*accum + util.char.getOctalValue(ch);
     }
-    try stdout.print("{c}", .{ @truncate(u8, accum)} );
+    var accum_trunc: u8 = @truncate(accum);
+    try stdout.print("{c}", .{ accum_trunc } );
 }
 
 pub fn print_hex_char() !void {
@@ -68,7 +69,8 @@ pub fn print_hex_char() !void {
     while(ebuffer.read()) |ch| {
         accum = 16*accum + util.char.getHexValue(ch);
     }
-    try stdout.print("{c}", .{ @truncate(u8, accum)} );
+    var accum_trunc: u8 = @truncate(accum);
+    try stdout.print("{c}", .{ accum_trunc } );
 }
 
 pub fn print_unicode_char() !void {

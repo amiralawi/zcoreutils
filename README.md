@@ -1,6 +1,9 @@
 # zcoreutils
 Coreutils equivalents written in zig
 
+# Installation
+Run `zig build` with appropriate options (succh as `zig build -Doptimize=ReleaseSmall`) to build all utilities.  Binaries are placed in the the `zig-out/bin` folder.
+
 # Design Philosophy
 zcoreutils is a set of binaries intended to replace common utilities used in unix-like environments.  This project was partially borne out of my desire to learn zig and partially as a result of my own personal annoyance at large binary sizes for common "simple" utilities, particularly for embedded applications.
 
@@ -12,7 +15,7 @@ In order of (approximate) precedence:
 4. Minimize code size
 
 # Utility Status
-| Utility | Status | Notes
+| Utility | Status      | Notes
 | ------- | ----------- |----
 | zsleep  | complete    |
 | zcksum  | complete    |

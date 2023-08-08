@@ -88,7 +88,8 @@ const ropestr = struct{
 
 
 
-pub fn tail_file_kim(file: std.fs.File) !void {
+pub fn tail_file_unseekable(file: std.fs.File) !void {
+    // keeps X lines retained in memory - used for unseekable file types (stdin, etc.)
     // TODO - bug when buffer_size = 1
     const buffer_size = 2048;
 
@@ -191,108 +192,6 @@ pub fn tail_file_kim(file: std.fs.File) !void {
     }
 }
 
-
-pub fn tail_file_kim_old(file: std.fs.File) !void {
-    // TODO - need to iron out the bug that appears when buffer_size == 1
-    const buffer_size = 2048;
-
-    const alloc = std.heap.page_allocator;
-    
-    var lines_buffer_raw = try alloc.alloc(*std.ArrayList(substr), n_lines_max);
-    defer alloc.free(lines_buffer_raw);
-
-    var linesRing = generic.ringBuffer(*std.ArrayList(substr)).init(lines_buffer_raw);
-
-    var line_working = try alloc.create(std.ArrayList(substr));
-    line_working.* = std.ArrayList(substr).init(alloc);
-
-    var finished = false;
-    var istart: usize = undefined;
-    var buffer: []u8 = undefined;
-    var n_read: usize = undefined;
-    var newbytes: []u8 = undefined;
-    while(!finished){
-        istart = 0;
-        buffer = try alloc.alloc(u8, buffer_size);
-        n_read = try file.read(buffer);
-        newbytes = buffer[0..n_read];
-
-        for(newbytes, 1..) |ch, i| {
-            if(ch == '\n' or i == n_read){
-                // close the string
-                try line_working.append(substr{.str=newbytes[istart..i], .parent=newbytes});
-            }
-            if(ch == '\n'){
-                var overflow = linesRing.writeForce(line_working);
-                //_ = overflow;
-                if(overflow) |popped| {
-                    var next_line = linesRing.peekPtr(0) orelse unreachable;
-                    var next_parent = (next_line.*).items[0].parent;
-
-                    // need to free overflow memory
-                    for(popped.items) |s|{
-                        if(s.parent.ptr == next_parent.ptr){
-                            break;
-                        }
-                        else{
-                            // free memory
-                            alloc.free(s.parent);
-                        }
-                    }
-                }
-
-                // make a new line
-                line_working = try alloc.create(std.ArrayList(substr));
-                line_working.* = std.ArrayList(substr).init(alloc);
-                
-                istart = i;
-            }
-        }
-
-        finished = (n_read != buffer_size);
-    }
-
-    // handle dangling str
-    if(istart != newbytes.len){
-        var overflow = linesRing.writeForce(line_working);
-        if(overflow) |popped| {
-            var next_line = linesRing.peekPtr(0) orelse unreachable;
-            var next_parent = (next_line.*).items[0].parent;
-
-            // need to free overflow memory
-            for(popped.items) |s|{
-                if(s.parent.ptr == next_parent.ptr){
-                    break;
-                }
-                else{
-                    // free memory
-                    alloc.free(s.parent);
-                }
-            }
-        }
-    }
-
-    var iter = linesRing.peekPtrItems();
-    while(iter.next()) |line| {
-        for((line.*).items) |str| {
-            var s = str.str;
-            try stdout.print("{s}", .{s});
-        }
-    }
-
-    // free remaining memory
-    iter = linesRing.peekPtrItems();
-    var last_freed: ?[*]const u8 = null;
-    while(iter.next()) |line| {
-        for((line.*).items) | str| {
-            if(str.parent.ptr != last_freed){
-                last_freed = str.parent.ptr;
-                alloc.free(str.parent);
-            }
-        }
-    }
-}
-
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -329,7 +228,7 @@ pub fn main() !void {
         //        once stdin stops, print
         //_ = stdin;
         //try tail_file(stdin);
-        try tail_file_kim(stdin);
+        try tail_file_unseekable(stdin);
         return;
     }
 
