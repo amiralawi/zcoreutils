@@ -2,22 +2,22 @@ const library = @import("./zcorecommon/library.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const util = @import("./zcorecommon/util.zig");
 const std = @import("std");
+
 const stdout = std.io.getStdOut().writer();
+const stderr = std.io.getStdErr().writer();
 
-pub fn print_usage() !void{
-    try stdout.print("Usage: cksum [FILE]...\n", .{});
-    try stdout.print("  or:  cksum [OPTION]\n", .{});
-    try stdout.print("Print CRC checksum, bytecount, and filename of each FILE.  Standard\n", .{});
-    try stdout.print("input will be used if no FILE is specified.\n", .{});
+const base_exe_name = "zcksum";
+
+pub fn print_usage(exe_name: []const u8) !void{
+    try stdout.print(
+        \\Usage: {s} [FILE]...
+        \\  or:  {s} [OPTION]
+        \\Print CRC checksum, bytecount, and filename of each FILE.  Standard
+        \\input will be used if no FILE is specified.
+        \\
+        , .{exe_name, exe_name}
+    );
 }
-
-pub fn print_version() !void{
-    try stdout.print("zcksum ({s}) {s}\n", .{library.name, library.version});
-    try stdout.print("Copyright (C) {s} Amir Alawi.\n", .{library.copyright_year});
-    try stdout.print("License: {s}.\n\n", .{library.license_short});
-    try stdout.print("Written by Amir Alawi.\n", .{});
-}
-
 
 const crcHashResult = struct{
     nbytes: usize = 0,
@@ -47,7 +47,6 @@ pub fn hash_file(file: std.fs.File) !crcHashResult {
     // append the byte-count in little-endian format, discard trailing zero bytes
     var nread_le = std.mem.nativeToLittle(usize, n_tot);
     var nread_le_bytearr: [@sizeOf(usize)]u8 = @bitCast(nread_le);
-    //var nread_le_bytearr = @bitCast([@sizeOf(usize)]u8, nread_le);
     var j: usize  = @sizeOf(usize) - 1;
     while(j > 0 and nread_le_bytearr[j] == 0){
         j -= 1;
@@ -55,6 +54,23 @@ pub fn hash_file(file: std.fs.File) !crcHashResult {
     crc.update(nread_le_bytearr[0..j+1]);
 
     return crcHashResult{.nbytes=n_tot, .hash=crc.final()};
+}
+
+pub fn report_cksum_error(err: anyerror, filename: []const u8, exe_name: []const u8) !void {
+    switch(err){
+        std.fs.File.OpenError.FileNotFound => {
+            try stderr.print("{s}: {s}: No such file or directory\n", .{exe_name, filename});
+        },
+        error.IsDir => {
+            try stderr.print("{s}: {s}: Is a directory\n", .{exe_name, filename});
+        },
+        error.AccessDenied => {
+            try stderr.print("{s}: {s}: Permission denied\n", .{exe_name, filename});
+        },
+        else => {
+            try stderr.print("{s}: {s}: unrecognized error '{any}'\n", .{exe_name, filename, err});
+        },
+    }
 }
 
 pub fn main() !void {
@@ -75,12 +91,12 @@ pub fn main() !void {
         return;
     }
     else if(args.items.len == 2){
-        if(util.u8str.strcmp(args.items[1], "--help")){
-            try print_usage();
+        if(util.u8str.cmp(args.items[1], "--help")){
+            try print_usage(exe_name);
             return;
         }
-        else if(util.u8str.strcmp(args.items[1], "--version")){
-            try print_version();
+        else if(util.u8str.cmp(args.items[1], "--version")){
+            try library.print_exe_version(base_exe_name);
             return;
         }
     }
@@ -88,14 +104,7 @@ pub fn main() !void {
     var cwd = std.fs.cwd();
     for(args.items[1..]) |filename| {
         var file = cwd.openFile(filename, .{}) catch |err| {
-            switch(err){
-                std.fs.File.OpenError.FileNotFound => {
-                    try stdout.print("{s}: {s}: No such file or directory\n", .{exe_name, filename});
-                },
-                else => {
-                    try stdout.print("{s}: {s}: {any}\n", .{exe_name, filename, err});
-                },
-            }
+            try report_cksum_error(err, filename, exe_name);
             continue;
         };
         defer file.close();

@@ -21,7 +21,7 @@ pub const u8str = struct {
         return false;
     }
 
-    pub fn strcmp(a: []const u8, b:[]const u8) bool {
+    pub fn cmp(a: []const u8, b:[]const u8) bool {
         // opposite (now correct) polarity to c-strcmp
         return std.mem.eql(u8, a, b);
     }
@@ -36,10 +36,18 @@ pub const u8str = struct {
 
     pub fn countChar(str: []const u8, character: u8) u32 {
         var count: u32 = 0;
-        for (0..str.len) |i| {
-            count += @intFromBool(str[i] == character);
+        for(str) |ch| {
+            count += @intFromBool(ch == character);
         }
         return count;
+    }
+    pub fn hasChar(str: []const u8, character: u8) bool {
+        for(str) |ch| {
+            if(ch == character){
+                return true;
+            }
+        }
+        return false;
     }
 
     pub fn has_space(str: []const u8) bool {

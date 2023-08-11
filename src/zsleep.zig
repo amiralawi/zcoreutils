@@ -4,29 +4,25 @@ const util = @import("./zcorecommon/util.zig");
 const std = @import("std");
 const stdout = std.io.getStdOut().writer();
 
+const base_exe_name = "zsleep";
 
 
-pub fn print_usage() !void{
-    try stdout.print("Usage: sleep NUMBER[SUFFIX]...\n", .{});
-    try stdout.print("  or:  sleep OPTION\n", .{});
-    try stdout.print("Pause for NUMBER seconds.  Optional SUFFIX may be one of:\n", .{});
-    try stdout.print("  's' for seconds (the default)\n", .{});
-    try stdout.print("  'm' for minutes\n", .{});
-    try stdout.print("  'h' for hours\n", .{});
-    try stdout.print("  'd' for days\n", .{});
-    try stdout.print("NUMBER may be any positive integer or floating-point number. Given\n", .{});
-    try stdout.print("two or more arguments, pause for the amount of time specified by\n", .{});
-    try stdout.print("the sum of their values.\n", .{});
+pub fn print_usage(exe_name: []const u8) !void {
+    try stdout.print(
+        \\Usage: {s} NUMBER[SUFFIX]...\n
+        \\  or:  sleep OPTION
+        \\Pause for NUMBER seconds.  Optional SUFFIX may be one of:
+        \\  's' for seconds (the default)
+        \\  'm' for minutes
+        \\  'h' for hours
+        \\  'd' for days
+        \\NUMBER may be any positive integer or floating-point number. Given
+        \\two or more arguments, pause for the amount of time specified by
+        \\the sum of their values.
+        \\
+    , .{ exe_name }
+    );
 }
-
-pub fn print_version() !void{
-    try stdout.print("zsleep ({s}) {s}\n", .{library.name, library.version});
-    try stdout.print("Copyright (C) {s} Amir Alawi.\n", .{library.copyright_year});
-    try stdout.print("License: {s}.\n\n", .{library.license_short});
-    try stdout.print("Written by Amir Alawi.\n", .{});
-
-}
-
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -45,12 +41,12 @@ pub fn main() !void {
         return;
     }
     else if(args.items.len == 2){
-        if(util.u8str.strcmp(args.items[1], "--help")){
-            try print_usage();
+        if(util.u8str.cmp(args.items[1], "--help")){
+            try print_usage(exe_name);
             return;
         }
-        else if(util.u8str.strcmp(args.items[1], "--version")){
-            try print_version();
+        else if(util.u8str.cmp(args.items[1], "--version")){
+            try library.print_exe_version(base_exe_name);
             return;
         }
     }

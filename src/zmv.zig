@@ -49,7 +49,7 @@ pub fn main() !void {
 
         // TODO - this does not catch files with different strings that resolve to the same name
         // eg ./a.txt and ./somedir/../a.txt
-        if(util.u8str.strcmp(src, dest)){
+        if(util.u8str.cmp(src, dest)){
             try stdout.print("{s}: '{s}' and '{s}' are the same file\n", .{exe_name, src, dest});
             return;
         }
