@@ -1,5 +1,17 @@
+// const std = @import("std");
+// const os = std.os;
+
 const std = @import("std");
+const builtin = @import("builtin");
 const os = std.os;
+const io = std.io;
+const mem = std.mem;
+const math = std.math;
+const assert = std.debug.assert;
+const windows = os.windows;
+const Os = std.builtin.Os;
+const maxInt = std.math.maxInt;
+const is_windows = builtin.os.tag == .windows;
 
 pub const u8str = struct {
     pub fn lessThan(context: void, a: []const u8, b: []const u8) bool {
@@ -191,3 +203,46 @@ pub fn gnomeSort(comptime T: type, items: []T, context: anytype, comptime lessTh
     }
 }
 
+pub const File = struct{
+    pub const UpdateTimeSV = enum(isize) { ignore, UTIME_NOW, UTIME_OMIT, };
+    pub const SPECIAL_VALUE_UTIME_NOW  = 0x3fffffff;
+    pub const SPECIAL_VALUE_UTIME_OMIT = 0x3ffffffe;
+    pub fn updateTimesSpecial(
+        file: std.fs.File,
+        /// access timestamp in nanoseconds
+        atime: i128,
+        /// last modification timestamp in nanoseconds
+        mtime: i128,
+        atime_sv: UpdateTimeSV,
+        mtime_sv: UpdateTimeSV,
+    ) std.fs.File.UpdateTimesError!void {
+        if (builtin.os.tag == .windows) {
+            const atime_ft = windows.nanoSecondsToFileTime(atime);
+            const mtime_ft = windows.nanoSecondsToFileTime(mtime);
+            return windows.SetFileTime(file.handle, null, &atime_ft, &mtime_ft);
+        }
+        var times = [2]os.timespec{
+            os.timespec{
+                .tv_sec = math.cast(isize, @divFloor(atime, std.time.ns_per_s)) orelse maxInt(isize),
+                .tv_nsec = math.cast(isize, @mod(atime, std.time.ns_per_s)) orelse maxInt(isize),
+            },
+            os.timespec{
+                .tv_sec = math.cast(isize, @divFloor(mtime, std.time.ns_per_s)) orelse maxInt(isize),
+                .tv_nsec = math.cast(isize, @mod(mtime, std.time.ns_per_s)) orelse maxInt(isize),
+            },
+        };
+
+        switch(atime_sv){
+            .UTIME_NOW  => { times[0].tv_nsec = SPECIAL_VALUE_UTIME_NOW;  },
+            .UTIME_OMIT => { times[0].tv_nsec = SPECIAL_VALUE_UTIME_OMIT; },
+            .ignore     => {},
+        }
+        switch(mtime_sv){
+            .UTIME_NOW  => { times[1].tv_nsec = SPECIAL_VALUE_UTIME_NOW;  },
+            .UTIME_OMIT => { times[1].tv_nsec = SPECIAL_VALUE_UTIME_OMIT; },
+            .ignore     => {},
+        }
+        try os.futimens(file.handle, &times);
+    }
+
+};

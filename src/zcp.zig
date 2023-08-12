@@ -1,10 +1,8 @@
 const util = @import("./zcorecommon/util.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
 
-
-
+var stdout: std.fs.File.Writer = undefined;
 
 pub fn is_valid_option(str: []const u8) bool {
     // TODO: do actual parsing
@@ -13,6 +11,8 @@ pub fn is_valid_option(str: []const u8) bool {
 }
 
 pub fn main() !void {
+    stdout = std.io.getStdOut().writer();
+
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const heapalloc = arena.allocator();

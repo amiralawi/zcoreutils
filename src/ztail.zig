@@ -2,7 +2,8 @@ const generic = @import("./zcorecommon/generic.zig");
 const util = @import("./zcorecommon/util.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+
+var stdout: std.fs.File.Writer = undefined;
 
 const n_lines_max: usize = 10;
 var linenumbers: std.ArrayList(usize) = undefined;
@@ -193,6 +194,8 @@ pub fn tail_file_unseekable(file: std.fs.File) !void {
 }
 
 pub fn main() !void {
+    stdout = std.io.getStdOut().writer();
+
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const heapalloc = arena.allocator();

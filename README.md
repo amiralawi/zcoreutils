@@ -2,7 +2,7 @@
 Coreutils equivalents written in zig
 
 # Installation
-Run `zig build` with appropriate options (succh as `zig build -Doptimize=ReleaseSmall`) to build all utilities.  Binaries are placed in the the `zig-out/bin` folder.
+Run `zig build` with appropriate options (such as `zig build -Doptimize=ReleaseSmall`) to build all utilities.  Binaries are placed in the the `zig-out/bin` folder.
 
 # Design Philosophy
 zcoreutils is a set of binaries intended to replace common utilities used in unix-like environments.  This project was partially borne out of my desire to learn zig and partially as a result of my own personal annoyance at large binary sizes for common "simple" utilities, particularly for embedded applications.
@@ -19,13 +19,14 @@ In order of (approximate) precedence:
 | ------- | ----------- |----
 | zsleep  | complete    |
 | zcksum  | complete    |
+| zrm     | mostly done | Missing -I resurive prompting. Does not implement: --no-preserve-root, --preserve-root=all, --one-file-system
 | zecho   | mostly done | does not currently support \e, \E, \u, \U
-| zhead   | usable      | prints 10 lines, no CLI option support yet
+| zhead   | mostly done | does not support: long --bytes and --lines options, negative bytecount/linecount
+| ztouch  | 50%         | 
 | ztail   | usable      | prints 10 lines, no CLI option support yet
 | zcat    | usable      | prints full file, no CLI option support yet
 | zls     | in-progress | missing lots of features
 | zcp     | preliminary | 
-| zrm     | preliminary |
 | zrmdir  | preliminary |
 | zmkdir  | preliminary |
 | zmv     | preliminary |

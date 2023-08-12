@@ -3,19 +3,22 @@ const cli = @import("./zcorecommon/cli.zig");
 const util = @import("./zcorecommon/util.zig");
 const std = @import("std");
 
-const stdout = std.io.getStdOut().writer();
-const stderr = std.io.getStdErr().writer();
+var stdout: std.fs.File.Writer = undefined;
+var stderr: std.fs.File.Writer = undefined;
 
 const base_exe_name = "zcksum";
 
 pub fn print_usage(exe_name: []const u8) !void{
     try stdout.print(
-        \\Usage: {s} [FILE]...
-        \\  or:  {s} [OPTION]
+        \\Usage: {0s} [FILE]...
+        \\  or:  {0s} [OPTION]
         \\Print CRC checksum, bytecount, and filename of each FILE.  Standard
         \\input will be used if no FILE is specified.
         \\
-        , .{exe_name, exe_name}
+        \\      --help     display this help and exit
+        \\      --version  output version information and exit
+        \\
+        , .{exe_name}
     );
 }
 
@@ -26,7 +29,7 @@ const crcHashResult = struct{
 
 pub fn hash_file(file: std.fs.File) !crcHashResult {
     // TODO - consider moving buffer into global variable scope
-    //        this will alloc utility to be compiled w/small stack requirments
+    //        this will allow utility to be compiled w/small stack requirments
     const readbuffer_size = 2048;
     var readbuffer: [readbuffer_size]u8 = undefined;
     var crc = std.hash.crc.Crc32Cksum.init();
@@ -74,6 +77,9 @@ pub fn report_cksum_error(err: anyerror, filename: []const u8, exe_name: []const
 }
 
 pub fn main() !void {
+    stdout = std.io.getStdOut().writer();
+    stderr = std.io.getStdErr().writer();
+
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const heapalloc = arena.allocator();
@@ -96,7 +102,7 @@ pub fn main() !void {
             return;
         }
         else if(util.u8str.cmp(args.items[1], "--version")){
-            try library.print_exe_version(base_exe_name);
+            try library.print_exe_version(stdout, base_exe_name);
             return;
         }
     }

@@ -1,7 +1,8 @@
 const util = @import("./zcorecommon/util.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+
+var stdout: std.fs.File.Writer = undefined;
 
 
 

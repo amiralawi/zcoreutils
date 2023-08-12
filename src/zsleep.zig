@@ -2,7 +2,8 @@ const library = @import("./zcorecommon/library.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const util = @import("./zcorecommon/util.zig");
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
+
+var stdout: std.fs.File.Writer = undefined;
 
 const base_exe_name = "zsleep";
 
@@ -25,6 +26,8 @@ pub fn print_usage(exe_name: []const u8) !void {
 }
 
 pub fn main() !void {
+    stdout = std.io.getStdOut().writer();
+    
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const heapalloc = arena.allocator();
@@ -46,7 +49,7 @@ pub fn main() !void {
             return;
         }
         else if(util.u8str.cmp(args.items[1], "--version")){
-            try library.print_exe_version(base_exe_name);
+            try library.print_exe_version(stdout, base_exe_name);
             return;
         }
     }

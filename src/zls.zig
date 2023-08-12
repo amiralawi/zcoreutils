@@ -1,3 +1,4 @@
+const cli = @import("./zcorecommon/cli.zig");
 const util = @import("./zcorecommon/util.zig");
 const std = @import("std");
 const print = std.debug.print;
@@ -56,12 +57,6 @@ fn get_directory_contents(pathname: []const u8, alloc: std.mem.Allocator) !*std.
     return list;
 }
 
-fn append_cli_args(container: *std.ArrayList([]const u8)) !void {
-    var argiter = std.process.args();
-    while (argiter.next()) |arg| {
-        try container.append(arg);
-    }
-}
 
 fn simple_print(dir_contents: *const std.ArrayList([]const u8)) void {
     for (dir_contents.items) |fsi| {
@@ -295,7 +290,7 @@ pub fn main() !void {
     const allocator = arena.allocator();
 
     var args = std.ArrayList([]const u8).init(allocator);
-    try append_cli_args(&args);
+    try cli.args.appendToArrayList(&args, allocator);
     var dirname = args.items[1];
 
     var flagmap = std.mem.zeroes([256]bool);

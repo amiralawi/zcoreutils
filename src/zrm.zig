@@ -3,29 +3,56 @@ const util = @import("./zcorecommon/util.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
 
-const stdout = std.io.getStdOut().writer();
-const stderr = std.io.getStdErr().writer();
-const stdin = std.io.getStdIn().reader();
+var stdout: std.fs.File.Writer = undefined;
+var stderr: std.fs.File.Writer = undefined;
+var stdin: std.fs.File.Reader = undefined;
 
 const base_exe_name = "zrm";
+const EXIT_FAILURE: u8 = 1;
+const EXIT_SUCCESS: u8 = 0;
 
 pub fn print_usage(exe_name: []const u8) !void {
     try stdout.print(
-        \\Usage: {s} [OPTION]... [FILE]...
+        \\Usage: {0s} [OPTION]... [FILE]...
         \\Remove (unlink) the FILE(s).
         \\
         \\CURRENTLY SUPPORTED OPTIONS
         \\      --help ............ display this help and exit
         \\      --version ......... output version information and exit
+        \\  -f, --force ........... ignore nonexistent files and arguments, never prompt
+        \\  -i                      prompt before every removal
+        \\  -I                      prompt once before removing more than three files
+        \\                          less intrusive than -i,
+        \\                          while still giving protection against most mistakes
+        \\
+        \\      --interactive[=WHEN] Prompt according to WHEN:
+        \\              --interactive=never
+        \\              --interactive=once   equivalent to -I
+        \\              --interactive=always equivalent to -i
+        \\              --interactive        equivalent to -i
+        \\
+        \\  -r, -R, --recursive     remove directies and their contents recursively
+        \\  -d, --dir               remove empty directories
+        \\  -v, --verbose           explain what is being done
+        \\
+        \\By default, {1s} does not remove directories.  Use the --recursive (-r or -R)
+        \\option to remove each listed directory, too, along with all of its contents.
+        \\
+        \\To remove a file whose name starts with a '-', for example '-foo',
+        \\use one of these commands:
+        \\  {0s} -- -foo
+        \\
+        \\  {0s} ./-foo
+        \\
+        \\Note that if you use rm to remove a file, it might be possible to recover
+        \\some of its contents, given sufficient expertise and/or time.  For greater
+        \\assurance that the contents are truly unrecoverable, consider using shred.
+        \\
+        \\
         \\
         \\UNIMPLEMENTED OPTIONS
-        \\  -f, --force           ignore nonexistent files and arguments, never prompt
-        \\  -i                    prompt before every removal
-        \\  -I                    prompt once before removing more than three files, or
-        \\                          when removing recursively; less intrusive than -i,
-        \\                          while still giving protection against most mistakes
-        \\      --interactive[=WHEN]  prompt according to WHEN: never, once (-I), or
-        \\                          always (-i); without WHEN, prompt always
+        \\  -I                    NEED TO ADD -> or when removing recursively;
+        \\                          
         \\      --one-file-system  when removing a hierarchy recursively, skip any
         \\                          directory that is on a file system different from
         \\                          that of the corresponding command line argument
@@ -33,26 +60,13 @@ pub fn print_usage(exe_name: []const u8) !void {
         \\      --preserve-root[=all]  do not remove '/' (default);
         \\                              with 'all', reject any command line argument
         \\                              on a separate device from its parent
-        \\  -r, -R, --recursive   remove directories and their contents recursively
-        \\  -d, --dir             remove empty directories
-        \\  -v, --verbose         explain what is being done
         \\
-        \\By default, rm does not remove directories.  Use the --recursive (-r or -R)
-        \\option to remove each listed directory, too, along with all of its contents.
-        \\
-        \\To remove a file whose name starts with a '-', for example '-foo',
-        \\use one of these commands:
-        \\  rm -- -foo
-        \\
-        \\  rm ./-foo
-        \\
-        \\Note that if you use rm to remove a file, it might be possible to recover
-        \\some of its contents, given sufficient expertise and/or time.  For greater
-        \\assurance that the contents are truly unrecoverable, consider using shred.
-        \\
-        , .{ exe_name }
+        , .{ exe_name,  base_exe_name}
     );
 }
+
+
+const PromptType = enum {always, once, never};
 
 var flag_dispVersion = false;
 var flag_dispHelp = false;
@@ -73,86 +87,21 @@ var flag_preserveRootAll = false;
 
 var prompt_behavior = PromptType.never;
 
-const PromptType = enum {always, once, never};
+
 
 var ignore_options = false;
 pub fn test_option_validity_and_store(str: []const u8) bool {
     if(ignore_options){
         return false;
     }
-    if(util.u8str.cmp(str, "--")){
-        ignore_options = true;
-        return true;
+    else if(util.u8str.startsWith(str, "--") and str.len > 1){
+        return test_long_option_validity_and_store(str);
     }
-    if(util.u8str.cmp(str, "--version")){
-        flag_dispVersion = true;
-        return true;
-    }
-    if(util.u8str.cmp(str, "--help")){
-        flag_dispHelp = true;
-        return true;
-    }
-    if(util.u8str.cmp(str, "--interactive")){
-        flag_force = false;
-        prompt_behavior = .always;
-        return true;
-    }
-    if(util.u8str.cmp(str, "--interactive=always")){
-        flag_force = false;
-        prompt_behavior = .always;
-        return true;
-    }
-    if(util.u8str.cmp(str, "--interactive=once")){
-        flag_force = false;
-        prompt_behavior = .always;
-        return true;
-    }
-    if(util.u8str.cmp(str, "--interactive=never")){
-        prompt_behavior = .always;
-        return true;
-    }
-    if(util.u8str.cmp(str, "--verbose")){
-        flag_verbose = true;
-        return true;
-    }
-    if(util.u8str.cmp(str, "--dir")){
-        flag_removeDirectories = true;
-        return true;
-    }
-    if(util.u8str.cmp(str, "--recursive")){
-        flag_recursive = true;
-        return true;
-    }
-    if(util.u8str.cmp(str, "--force")){
-        flag_force = true;
-        prompt_behavior = .never;
-        return true;
-    }
-    // if(util.u8str.cmp(str, "--one-file-system")){
-    //     flag_oneFileSystem = true;
-    //     return true;
-    // }
-    // if(util.u8str.cmp(str, "--no-preserve-root")){
-    //     flag_noPreserveRoot = true;
-    //     return true;
-    // }
-    if(util.u8str.cmp(str, "--preserve-root")){
-        flag_preserveRoot = true;
-        return true;
-    }
-    // if(util.u8str.cmp(str, "--preserve-root=all")){
-    //     flag_preserveRootAll = true;
-    //     return true;
-    // }
-    if(util.u8str.startsWith(str, "-") and str.len > 1){
+    else if(util.u8str.startsWith(str, "-") and str.len > 1){
         var all_chars_valid_flags = true;
         for(str[1..]) |ch| {
             switch(ch){
-                'f', 'v' => {},
-                'r', 'R' => {},
-                'd' => {},
-                'i' => {},
-                'I' => {},
+                'f', 'v', 'r', 'R', 'd', 'i', 'I' => {},
                 else => { all_chars_valid_flags = false; },
             }
         }
@@ -174,16 +123,76 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
         }
         return true;
     }
-    
-
-    // unrecognized option, probably a filename
     return false;
 }
 
-const delete_status = enum {
-    file_deleted, dir_deleted, deletion_failed
-};
+pub fn test_long_option_validity_and_store(str: []const u8) bool {
+    // this function only gets called when str starts with "--"
+    if(util.u8str.cmp(str, "--")){
+        ignore_options = true;
+        return true;
+    }
 
+    var option = str[2..];
+    if(util.u8str.cmp(option, "version")){
+        flag_dispVersion = true;
+        return true;
+    }
+    else if(util.u8str.cmp(option, "help")){
+        flag_dispHelp = true;
+        return true;
+    }
+    else if(util.u8str.cmp(option, "interactive")){
+        flag_force = false;
+        prompt_behavior = .always;
+        return true;
+    }
+    else if(util.u8str.cmp(option, "interactive=always")){
+        flag_force = false;
+        prompt_behavior = .always;
+        return true;
+    }
+    else if(util.u8str.cmp(option, "interactive=once")){
+        flag_force = false;
+        prompt_behavior = .once;
+        return true;
+    }
+    else if(util.u8str.cmp(option, "interactive=never")){
+        prompt_behavior = .never;
+        return true;
+    }
+    else if(util.u8str.cmp(option, "verbose")){
+        flag_verbose = true;
+        return true;
+    }
+    else if(util.u8str.cmp(option, "dir")){
+        flag_removeDirectories = true;
+        return true;
+    }
+    else if(util.u8str.cmp(option, "recursive")){
+        flag_recursive = true;
+        return true;
+    }
+    else if(util.u8str.cmp(option, "force")){
+        flag_force = true;
+        prompt_behavior = .never;
+        return true;
+    }
+    // if(util.u8str.cmp(option, "one-file-system")){
+    //     flag_oneFileSystem = true;
+    //     return true;
+    // }
+    // if(util.u8str.cmp(option, "no-preserve-root")){
+    //     flag_noPreserveRoot = true;
+    //     return true;
+    // }
+    else if(util.u8str.cmp(option, "preserve-root")){
+        flag_preserveRoot = true;
+        return true;
+    }
+
+    return false;
+}
 
 pub fn input_confirmation() bool {
     var b = [1]u8{0};
@@ -200,15 +209,15 @@ pub fn input_confirmation() bool {
     return val;
 }
 
-pub fn delete_file(filename: []const u8, cwd: std.fs.Dir) !delete_status {
+pub fn delete_file(filename: []const u8, cwd: std.fs.Dir) !file_type {
     if(cwd.deleteFile(filename)){
-        return delete_status.file_deleted;
+        return file_type.file;
     }
     else |errFile| {
         if(errFile == error.IsDir){
             if(flag_recursive){
                 if(cwd.deleteTree(filename)) {
-                    return delete_status.dir_deleted;
+                    return file_type.dir;
                 }
                 else |errTree|{
                     return errTree;
@@ -217,7 +226,7 @@ pub fn delete_file(filename: []const u8, cwd: std.fs.Dir) !delete_status {
             }
             else if(flag_removeDirectories){
                 if(cwd.deleteDir(filename)){
-                    return delete_status.dir_deleted;
+                    return file_type.dir;
                 }
                 else |errDir| {
                     return errDir;
@@ -254,71 +263,85 @@ pub fn report_delete_error(err: anyerror, filename: []const u8, exe_name: []cons
     }
 }
 
-pub fn main() !void {
+const file_type = enum { file, dir };
+
+pub fn main() !u8 {
+    stdout = std.io.getStdOut().writer();
+    stderr = std.io.getStdErr().writer();
+    stdin = std.io.getStdIn().reader();
+
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const heapalloc = arena.allocator();
 
+    // TODO change args storage
+    // TODO cli.args.appendToArrayList internally uses std.process.argsWithAllocator which also
+    // TODO appends items to a std.ArrayList -> the system fills an ArrayList internally and uses
+    // TODO that to fill an ArrayList externally which is pretty dumb.
+
     var args = std.ArrayList([]const u8).init(heapalloc);
     try cli.args.appendToArrayList(&args, heapalloc);
-
-    var filenames = try std.ArrayList([]const u8).initCapacity(heapalloc, args.items.len);
-    var options = try std.ArrayList([]const u8).initCapacity(heapalloc, args.items.len);
-
     var exe_name = args.items[0];
 
     // process options & update globals
     const cwd = std.fs.cwd();
+    var nfilenames: usize = 0;
     for(args.items[1..]) |arg| {
+        // Move anything that isn't a valid option to the beginning of args - take the bottom
+        // slice for use as filenames later
         if(!test_option_validity_and_store(arg)){
-            try filenames.append(arg);
+            args.items[nfilenames] = arg;
+            nfilenames += 1;
         }
-        else{
-            try options.append(arg);
+
+        // do this in the loop to allow early exit
+        if(flag_dispHelp){
+            try print_usage(exe_name);
+            return EXIT_SUCCESS;
+        }
+        if(flag_dispVersion){
+            try library.print_exe_version(stdout, base_exe_name);
+            return EXIT_SUCCESS;
         }
     }
+    var filenames = args.items[0..nfilenames];
 
-    // now execute rm
-    if(flag_dispHelp){
-        try print_usage(exe_name);
-        return;
-    }
-    if(flag_dispVersion){
-        try library.print_exe_version(base_exe_name);
-        return;
-    }
-
-    if(prompt_behavior == .once and filenames.items.len > 3){
-        try stdout.print("{s}: remove {d} arguments? ", .{exe_name, filenames.items.len} );
+    if(prompt_behavior == .once and filenames.len > 3){
+        try stdout.print("{s}: remove {d} arguments? ", .{exe_name, filenames.len} );
         if(!input_confirmation()){
-            return;
+            return EXIT_SUCCESS;
         }
     }
 
-    for(filenames.items) |filename| {
+    for(filenames) |filename| {
+        var confirm_deletion = true;
+        var filetype: []const u8 = "";
+
         if(is_root(filename)){
-            try stdout.print("{s}: it is dangerous to operate recursively on '/'\n", .{exe_name});
-            try stdout.print("{s}: use --no-preserve-root to override this failsafe\n", .{exe_name});
+            try stderr.print("{s}: it is dangerous to operate recursively on '/'\n", .{exe_name});
+            try stderr.print("{s}: use --no-preserve-root to override this failsafe\n", .{exe_name});
+            confirm_deletion = flag_noPreserveRoot;
         }
         else if(prompt_behavior == .always){
             // TODO - investigate file type (empty file, non-empty, etc) and file permissions
-            var filetype = "regular file";
+            // filetype = "empty file", "regular file", "directory" or "empty directory"
             try stdout.print("{s}: remove {s} '{s}'? ", .{exe_name, filetype, filename} );
-            if(!input_confirmation()){
-                continue;
+            confirm_deletion = input_confirmation();
+        }
+
+        if(!confirm_deletion){
+            continue;
+        }
+
+        if(delete_file(filename, cwd)) |status| {
+            filetype = if(status == .dir) "directory " else "file ";
+            if(flag_verbose){
+                try stdout.print("{s}: deleted {s}'{s}'\n", .{exe_name, filetype, filename});
             }
         }
-        else{
-            if(delete_file(filename, cwd)) |status| {
-                var filetype = if(status == .dir_deleted) "directory" else "file";
-                if(flag_verbose){
-                    try stdout.print("{s}: deleted {s} '{s}'\n", .{exe_name, filetype, filename});
-                }
-            }
-            else |err| {
-                try report_delete_error(err, filename, exe_name);
-            }
-        }
-        
+        else |err| {
+            try report_delete_error(err, filename, exe_name);
+        }   
     }
+    return EXIT_SUCCESS;
 }

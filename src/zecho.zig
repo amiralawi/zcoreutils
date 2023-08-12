@@ -1,9 +1,8 @@
 const util = @import("./zcorecommon/util.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
 
-
+var stdout: std.fs.File.Writer = undefined;
 
 var append_newline = false;
 var handle_escapes = false;
@@ -182,6 +181,8 @@ pub fn print_dangling_escape_sequences() !void {
 }
 
 pub fn main() !void {
+    stdout = std.io.getStdOut().writer();
+
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
