@@ -57,7 +57,6 @@ pub fn main() !void {
         return;
     }
     
-    
     // copy all files to last argument
     var nfiles: usize = filenames.items.len - 1;
     var dest_dirname = filenames.items[nfiles];

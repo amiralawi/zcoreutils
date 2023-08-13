@@ -73,6 +73,7 @@ pub fn print_hex_char() !void {
 }
 
 pub fn print_unicode_char() !void {
+    // TODO
 }
 
 var e_state: escape_state = .unescaped;
@@ -164,9 +165,7 @@ pub fn process_char(ch: u8) !void {
             // unicode \UHHHHHHHH, H can be 1 to 8 hex digits
                 e_state = .unescaped; 
         },
-    }  
-
-    
+    }
 }
 
 pub fn print_dangling_escape_sequences() !void {
@@ -190,7 +189,6 @@ pub fn main() !void {
     ebuffer = try std.RingBuffer.init(ebuff_alloc, 16);
     defer ebuffer.deinit(ebuff_alloc);
     
-
     const allocator = arena.allocator();
 
     // get CLI args

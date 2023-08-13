@@ -35,7 +35,6 @@ pub fn main() !void {
     defer arena.deinit();
     const heapalloc = arena.allocator();
 
-
     var args = std.ArrayList([]const u8).init(heapalloc);
     var filenames = std.ArrayList([]const u8).init(heapalloc);
     try cli.args.appendToArrayList(&args, heapalloc);

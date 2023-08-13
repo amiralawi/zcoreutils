@@ -7,7 +7,7 @@ var stdout: std.fs.File.Writer = undefined;
 var stderr: std.fs.File.Writer = undefined;
 
 
-const base_exe_name = "zrm";
+const base_exe_name = "TEMPLATE";
 const EXIT_FAILURE: u8 = 1;
 const EXIT_SUCCESS: u8 = 0;
 

@@ -87,8 +87,6 @@ var flag_preserveRootAll = false;
 
 var prompt_behavior = PromptType.never;
 
-
-
 var ignore_options = false;
 pub fn test_option_validity_and_store(str: []const u8) bool {
     if(ignore_options){
@@ -190,7 +188,6 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         flag_preserveRoot = true;
         return true;
     }
-
     return false;
 }
 
@@ -205,7 +202,6 @@ pub fn input_confirmation() bool {
     while(nread != 0 and b[0] != '\n'){
         nread = stdin.read(&b) catch 0;
     }
-
     return val;
 }
 
@@ -222,7 +218,6 @@ pub fn delete_file(filename: []const u8, cwd: std.fs.Dir) !file_type {
                 else |errTree|{
                     return errTree;
                 }
-                
             }
             else if(flag_removeDirectories){
                 if(cwd.deleteDir(filename)){
@@ -231,7 +226,6 @@ pub fn delete_file(filename: []const u8, cwd: std.fs.Dir) !file_type {
                 else |errDir| {
                     return errDir;
                 }
-                
             }
         }
         return errFile;

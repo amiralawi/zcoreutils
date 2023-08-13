@@ -19,13 +19,14 @@ In order of (approximate) precedence:
 | ------- | ----------- |----
 | zsleep  | complete    |
 | zcksum  | complete    |
-| zrm     | mostly done | Missing -I resurive prompting. Does not implement: --no-preserve-root, --preserve-root=all, --one-file-system
-| zecho   | mostly done | does not currently support \e, \E, \u, \U
-| zhead   | mostly done | does not support: long --bytes and --lines options, negative bytecount/linecount
+| zecho   | 95%         | does not currently support \e, \E, \u, \U
+| zrm     | 90%         | Missing -I resurive prompting. Does not implement: --no-preserve-root, --preserve-root=all, --one-file-system
+| zhead   | 85%         | does not support: long --bytes and --lines options, negative bytecount/linecount
+| zwc     | 80%         | probably implements bytes-vs-chars incorrectly, does not implement --files0-from=F
 | ztouch  | 50%         | 
 | ztail   | usable      | prints 10 lines, no CLI option support yet
 | zcat    | usable      | prints full file, no CLI option support yet
-| zls     | in-progress | missing lots of features
+| zls     | in-progress | demonstrator only, missing lots of features
 | zcp     | preliminary | 
 | zrmdir  | preliminary |
 | zmkdir  | preliminary |

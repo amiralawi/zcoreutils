@@ -260,7 +260,6 @@ pub fn test_option_validity_and_store(str: []const u8) !bool {
         }
         return true;
     }
-
     return false;
 }
 

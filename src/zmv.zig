@@ -17,7 +17,6 @@ pub fn main() !void {
     defer arena.deinit();
     const heapalloc = arena.allocator();
 
-
     var args = std.ArrayList([]const u8).init(heapalloc);
     try cli.args.appendToArrayList(&args, heapalloc);
 
@@ -53,11 +52,10 @@ pub fn main() !void {
             try stdout.print("{s}: '{s}' and '{s}' are the same file\n", .{exe_name, src, dest});
             return;
         }
-
+        
         try cwd.rename(src, dest);
         return;
     }
-    
     
     // move all files to directory specified in last argument
     var nfiles: usize = filenames.items.len - 1;

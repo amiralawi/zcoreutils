@@ -61,13 +61,10 @@ pub fn tail_file(file: std.fs.File) !void {
     }
 }
 
-
 const substr = struct{
     str: []const u8 = undefined,
     parent: []const u8 = undefined,
 };
-
-
 
 const ropestr = struct{
     substrings: std.ArrayList(substr) = undefined,
@@ -86,8 +83,6 @@ const ropestr = struct{
         self.substrings.append(newitem);
     }
 };
-
-
 
 pub fn tail_file_unseekable(file: std.fs.File) !void {
     // keeps X lines retained in memory - used for unseekable file types (stdin, etc.)
@@ -200,8 +195,6 @@ pub fn main() !void {
     defer arena.deinit();
     const heapalloc = arena.allocator();
 
-
-
     var args = std.ArrayList([]const u8).init(heapalloc);
     var filenames = std.ArrayList([]const u8).init(heapalloc);
     try cli.args.appendToArrayList(&args, heapalloc);
@@ -212,7 +205,6 @@ pub fn main() !void {
     //var linenumbers = std.ArrayList(usize).init(heapalloc);
     linenumbers = std.ArrayList(usize).init(heapalloc);
 
-
     // TODO - handle CLI options
     for(args.items[1..]) |arg| {
         if(is_valid_option(arg)){
@@ -222,7 +214,6 @@ pub fn main() !void {
             try filenames.append(arg);
         }
     }
-
 
     if(filenames.items.len == 0){
         // no file argument passed, read standard input instead
@@ -240,7 +231,6 @@ pub fn main() !void {
     for(filenames.items, 0..) |filename, i_file| {
         linenumbers.clearRetainingCapacity();
         
-
         // 1 - open file
         var file = cwd.openFile(filename, .{}) catch |err| {
             switch(err){

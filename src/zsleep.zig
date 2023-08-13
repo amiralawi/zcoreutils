@@ -7,7 +7,6 @@ var stdout: std.fs.File.Writer = undefined;
 
 const base_exe_name = "zsleep";
 
-
 pub fn print_usage(exe_name: []const u8) !void {
     try stdout.print(
         \\Usage: {s} NUMBER[SUFFIX]...\n
@@ -54,7 +53,6 @@ pub fn main() !void {
         }
     }
 
-    
     var dt_accum: f64 = 0;
     for(args.items[1..]) |dt| {
         if(dt.len == 0){
@@ -62,7 +60,6 @@ pub fn main() !void {
             continue;
         }
 
-        
         var dt_clean = dt;
         var mult: f64 = 1.0;
         switch(dt[dt.len - 1]){
@@ -76,13 +73,11 @@ pub fn main() !void {
         var dt_val = std.fmt.parseFloat(f64, dt_clean) catch {
             try stdout.print("{s}: invalid time interval '{s}'\n", .{exe_name, dt});
             return;
-            
         };
         if(dt_val < 0.0){
             try stdout.print("{s}: invalid time interval '{s}' -> cannot be negative\n", .{exe_name, dt});
             return;
         }
-        
         dt_accum += mult * dt_val;
     }
 

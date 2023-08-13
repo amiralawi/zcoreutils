@@ -131,6 +131,14 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     b.installArtifact(exe_zcksum);
+    
+    const exe_zwc = b.addExecutable(.{
+        .name = "zwc",
+        .root_source_file = .{ .path = "src/zwc.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(exe_zwc);
 
     const exe_test = b.addExecutable(.{
         .name = "test",
