@@ -5,29 +5,34 @@ const std = @import("std");
 
 var stdout: std.fs.File.Writer = undefined;
 
-pub fn working_function() !i32 {
-    return -66;
-}
-
-pub fn failing_function() !void {
-    return error.baderror;
-}
-
-pub fn fail_on_positive(a: i32) !bool {
-    if(a > 0){
-        return error.baderror;
+pub fn makePath(self: std.fs.Dir, sub_path: []const u8) !void {
+    var it = try std.fs.path.componentIterator(sub_path);
+    var component = it.last() orelse return;
+    while (true) {
+        self.makeDir(component.path) catch |err| switch (err) {
+            error.PathAlreadyExists => {
+                // TODO stat the file and return an error if it's not a directory
+                // this is important because otherwise a dangling symlink
+                // could cause an infinite loop
+                var s = try self.statFile(sub_path);
+                if(s.kind != .directory){ return error.PathIsNotDir; }
+            },
+            error.FileNotFound => |e| {
+                component = it.previous() orelse return e;
+                continue;
+            },
+            else => |e| return e,
+        };
+        component = it.next() orelse return;
     }
-    return true;
 }
 
 pub fn main() !void {
     stdout = std.io.getStdOut().writer();
 
-    if(fail_on_positive(1)) |e|{
-        try stdout.print("if fop -> {any}\n", .{e});
-    }
-    else |f| {
-        try stdout.print("else fop -> {any}", .{f});
-    }
+    var filename = "a";
 
+    var cwd = std.fs.cwd();
+    try makePath(cwd, filename);
+    try stdout.print("done\n", .{});
 }

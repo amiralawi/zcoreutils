@@ -85,13 +85,55 @@
         }, 
 
         {
+            "name": "Debug - zrmdir",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/zig-out/bin/zrmdir",
+            "args": ["-v", "-p", "m/n/o/p"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/test",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "Debug - zmkdir",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/zig-out/bin/zmkdir",
+            "args": ["a"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/test",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }, 
+
+        {
             "name": "Debug - test",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/zig-out/bin/test",
             "args": ["${workspaceFolder}/test/a"],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/test",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

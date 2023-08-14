@@ -49,8 +49,6 @@ var expected_option: ExpectedOptionValType = .none;
 
 var flag_dispVersion = false;
 var flag_dispHelp = false;
-//var flag_modifyTimeOnly = false;
-//var flag_accessTimeOnly = false;
 var flag_nocreate = false;
 var flag_nodereference = false;
 var flag_timestamp = false;

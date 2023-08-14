@@ -71,10 +71,21 @@ pub const u8str = struct {
         return false;
     }
 
-    pub fn findChar(str: []const u8, ch: u8) usize {
+    pub fn findChar(str: []const u8, ch: u8) isize {
         for(str, 0..) |e, i| {
             if(e == ch){
                 return i;
+            }
+        }
+        return -1;
+    }
+
+    pub fn rfindChar(str: []const u8, ch: u8) isize {
+        var i = str.len;
+        while(i > 0){
+            i -= 1;
+            if(str[i] == ch){
+                return @intCast(i);
             }
         }
         return -1;
