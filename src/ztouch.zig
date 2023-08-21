@@ -79,10 +79,10 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
         },
         .none => {},
     }
-    if(util.u8str.startsWith(str, "--")){
+    if(std.mem.startsWith(u8, str, "--")){
         return test_option_validity_and_store(str);
     }
-    else if(util.u8str.startsWith(str, "-") and str.len > 1){
+    else if(std.mem.startsWith(u8, str, "-") and str.len > 1){
         var all_chars_valid_flags = true;
         for(str[1..]) |ch| {
             switch(ch){
@@ -151,11 +151,11 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         return true;
     }
 
-    if(util.u8str.startsWith(option, "date=")){
+    if(std.mem.startsWith(u8, option, "date=")){
         // TODO
         return true;
     }
-    if(util.u8str.startsWith(option, "reference=")){
+    if(std.mem.startsWith(u8, option, "reference=")){
         // TODO
         return true;
     }

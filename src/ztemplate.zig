@@ -60,10 +60,10 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
     switch(expected_option){
         .none => {}
     }
-    if(util.u8str.startsWith(str, "--")){
+    if(std.mem.startsWith(u8, str, "--")){
         return test_option_validity_and_store(str);
     }
-    else if(util.u8str.startsWith(str, "-") and str.len > 1){
+    else if(std.mem.startsWith(u8, str, "-") and str.len > 1){
         var all_chars_valid_flags = true;
         for(str[1..]) |ch| {
             switch(ch){

@@ -18,6 +18,10 @@ const permission = struct {
     x: bool = false,
 };
 
+fn has_substr(str: []const u8, substr: []const u8) bool {
+    return std.mem.indexOf(u8, str, substr) != null;
+}
+
 fn get_n_subfiles(pathname: []const u8) !usize {
     var dir = try std.fs.openIterableDirAbsolute(pathname, .{});
     defer dir.close();
@@ -60,7 +64,7 @@ fn get_directory_contents(pathname: []const u8, alloc: std.mem.Allocator) !*std.
 
 fn simple_print(dir_contents: *const std.ArrayList([]const u8)) void {
     for (dir_contents.items) |fsi| {
-        if (util.u8str.has_space(fsi)) {
+        if(has_substr(fsi, " ")){
             print("'{s}'\n", .{fsi});
         } else {
             print("{s}\n", .{fsi});
@@ -70,7 +74,7 @@ fn simple_print(dir_contents: *const std.ArrayList([]const u8)) void {
 
 fn contains_str_with_space(str_list: [][]const u8) bool {
     for (str_list) |str| {
-        if (util.u8str.has_space(str)) {
+        if (has_substr(str, " ")) {
             return true;
         }
     }
@@ -120,7 +124,7 @@ fn calc_print_columns(w_console: usize, dir_contents: *const std.ArrayList([]con
 
     var process_spaces = false;
     for (dir_contents.items) |e| {
-        if (util.u8str.has_space(e)) {
+        if (has_substr(e, " ")) {
             process_spaces = true;
             break;
         }
@@ -215,7 +219,7 @@ const fs_grid = struct {
                 var col = self.columns[i];
                 var wrapchar: []const u8 = "";
                 if (col.has_space) {
-                    if (util.u8str.has_space(row.items[i])) {
+                    if (has_substr(row.items[i], " ")) {
                         wrapchar = "'";
                     } else {
                         wrapchar = " ";
@@ -244,7 +248,7 @@ fn print_in_columns(ncols: usize, dir_contents: *const std.ArrayList([]const u8)
 
     var process_spaces = false;
     for (dir_contents.items) |e| {
-        if (util.u8str.has_space(e)) {
+        if (has_substr(e, " ")) {
             process_spaces = true;
             break;
         }
@@ -264,7 +268,7 @@ fn print_in_columns(ncols: usize, dir_contents: *const std.ArrayList([]const u8)
             var col_end = @min(col_start + nrows, dir_contents.items.len);
 
             var wrapchar = wrapchar_nospace;
-            if (util.u8str.has_space(dir_contents.items[i])) {
+            if (has_substr(dir_contents.items[i], " ")) {
                 wrapchar = "\"";
             }
 
@@ -295,11 +299,10 @@ pub fn main() !void {
 
     var flagmap = std.mem.zeroes([256]bool);
     for (args.items) |arg| {
-        //if (arg.len > 1 and util.string.startsWith(&arg, "-") and util.string.countChar(&arg, '-') == 1) {
-        if (arg.len > 1 and util.u8str.startsWith(arg, "-") and util.u8str.countChar(arg, '-') == 1) {
+        if (arg.len > 1 and std.mem.startsWith(u8, arg, "-") and std.mem.count(u8, arg, "-") == 1) {
             var is_all_alpha: bool = true;
             for (arg[1..]) |c| {
-                is_all_alpha = is_all_alpha and util.char.isAlpha(c);
+                is_all_alpha = is_all_alpha and std.ascii.isAlphabetic(c);
             }
             if (!is_all_alpha) {
                 continue;
@@ -328,7 +331,7 @@ pub fn main() !void {
     for (dir_contents.items) |entry| {
         if (keep_all) {
             try dir_contents_filt.append(entry);
-        } else if (!util.u8str.startsWith(entry, ".")) {
+        } else if (!std.mem.startsWith(u8, entry, ".")) {
             try dir_contents_filt.append(entry);
         }
     }

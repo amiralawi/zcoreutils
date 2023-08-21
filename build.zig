@@ -1,5 +1,5 @@
 const std = @import("std");
-
+const builtin = @import("builtin");
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
@@ -14,7 +14,13 @@ pub fn build(b: *std.Build) void {
     // Standard optimization options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
     // set a preferred release mode, allowing the user to decide how to optimize.
+    
     const optimize = b.standardOptimizeOption(.{});
+    //const optimize = std.builtin.Mode.ReleaseSmall;
+
+    var single_threaded = builtin.single_threaded;
+    //var single_threaded = true;
+    
 
     const exe = b.addExecutable(.{
         .name = "zls",
@@ -23,6 +29,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zls.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
 
     // This declares intent for the executable to be installed into the
@@ -37,6 +44,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zecho.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zecho);
 
@@ -46,6 +54,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zhead.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zhead);
 
@@ -54,6 +63,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/ztail.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_ztail);
 
@@ -62,6 +72,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zcat.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zcat);
 
@@ -71,6 +82,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/ztouch.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_ztouch);
 
@@ -79,6 +91,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zmkdir.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zmkdir);
 
@@ -88,6 +101,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zrm.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zrm);
 
@@ -104,6 +118,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zcp.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zcp);
 
@@ -113,6 +128,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zmv.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zmv);
 
@@ -121,6 +137,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zsleep.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zsleep);
 
@@ -129,6 +146,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zcksum.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zcksum);
     
@@ -137,6 +155,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/zwc.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zwc);
 
@@ -145,6 +164,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/test.zig" },
         .target = target,
         .optimize = optimize,
+        .single_threaded = single_threaded,
     });
     b.installArtifact(exe_test);
 

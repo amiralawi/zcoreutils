@@ -46,10 +46,10 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
     switch(expected_option){
         .none => {}
     }
-    if(util.u8str.startsWith(str, "--")){
+    if(std.mem.startsWith(u8, str, "--")){
         return test_option_validity_and_store(str);
     }
-    else if(util.u8str.startsWith(str, "-") and str.len > 1){
+    else if(std.mem.startsWith(u8, str, "-") and str.len > 1){
         var all_chars_valid_flags = true;
         for(str[1..]) |ch| {
             switch(ch){
@@ -155,30 +155,33 @@ pub fn main() !u8 {
             return EXIT_SUCCESS;
         }
     }
+    
     var filenames = args.items[0..nfilenames];
+    if(filenames.len == 0){
+        try stderr.print("{s}: missing operand\n", .{exe_name});
+        try stderr.print("Try '{s} --help' for more information.\n", .{exe_name});
+        return EXIT_FAILURE;
+    }
 
     for(filenames) |filename| {
-        var d = filename;
-        while(d.len > 0){
-            if(flag_verbose){
-                try stdout.print("{0s}: removing directory, '{1s}'\n", .{exe_name, d});
-            }
-            cwd.deleteDir(d) catch |err| {
-                try report_rmdir_error(err, d, exe_name);
-                break;
-            };
+        if(flag_verbose){
+            try stdout.print("{0s}: removing directory, '{1s}'\n", .{exe_name, filename});
+        }
+        cwd.deleteDir(filename) catch |err| {
+            try report_rmdir_error(err, filename, exe_name);
+        };
 
-            if(flag_parents){
-                var i = util.u8str.rfindChar(d, std.fs.path.sep);
-                if(i > 0){
-                    d = d[0..@intCast(i)];
-                }    
-                else{
-                    d = d[0..0];
+        if(flag_parents){
+            var it = try std.fs.path.componentIterator(filename);
+            _ = it.last();
+            while(it.previous()) |c| {
+                if(flag_verbose){
+                    try stdout.print("{0s}: removing directory, '{1s}'\n", .{exe_name, c.path});
                 }
-            }
-            else{
-                d = d[0..0];
+
+                cwd.deleteDir(c.path) catch |err| {
+                    try report_rmdir_error(err, c.path, exe_name);
+                };
             }
         }
     }

@@ -195,7 +195,7 @@ pub fn test_option_validity_and_store(str: []const u8) !bool {
         },
         .other => {}
     }
-    if(!util.u8str.startsWith(str, "-")){
+    if(!std.mem.startsWith(u8, str, "-")){
         // exit early
         return false;
     }
@@ -227,15 +227,15 @@ pub fn test_option_validity_and_store(str: []const u8) !bool {
         delimiter_eol = '\x00';
         return true;
     }
-    // if(util.u8str.startsWith(str, "--lines")){
+    // if(std.mem.startsWith(u8, str, "--lines")){
     //     // TODO
     //     return true;
     // }
-    // if(util.u8str.startsWith(str, "--bytes")){
+    // if(std.mem.startsWith(u8, str, "--bytes")){
     //     // TODO
     //     return true;
     // }
-    if(util.u8str.startsWith(str, "-") and str.len > 1){
+    if(std.mem.startsWith(u8, str, "-") and str.len > 1){
         var all_chars_valid_flags = true;
         for(str[1..]) |ch| {
             switch(ch){

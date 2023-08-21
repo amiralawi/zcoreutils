@@ -39,37 +39,24 @@ pub const u8str = struct {
     }
 
     pub fn startsWith(str: []const u8, prefix: []const u8) bool {
-        if (prefix.len > str.len) {
-            return false;
-        }
-        //return true;
-        return std.mem.eql(u8, str[0..prefix.len], prefix);
+        _ = prefix;
+        _ = str;
+        @compileError("deprecated - use std.mem.startsWith(u8, haystack, needle)");
+        // if (prefix.len > str.len) {
+        //     return false;
+        // }
+        // //return true;
+        // return std.mem.eql(u8, str[0..prefix.len], prefix);
     }
 
-    pub fn countChar(str: []const u8, character: u8) u32 {
-        var count: u32 = 0;
-        for(str) |ch| {
-            count += @intFromBool(ch == character);
-        }
-        return count;
-    }
-    pub fn hasChar(str: []const u8, character: u8) bool {
-        for(str) |ch| {
-            if(ch == character){
-                return true;
-            }
-        }
-        return false;
-    }
-
-    pub fn has_space(str: []const u8) bool {
-        for (str) |c| {
-            if (char.isSpace(c)) {
-                return true;
-            }
-        }
-        return false;
-    }
+    // pub fn has_space(str: []const u8) bool {
+    //     for (str) |c| {
+    //         if (std.ascii.isWhitespace(c)) {
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
 
     pub fn findChar(str: []const u8, ch: u8) isize {
         for(str, 0..) |e, i| {
@@ -102,7 +89,7 @@ pub const u8str = struct {
     pub fn sliceStrip(str: []const u8) []const u8 {
         var str_rstrip = sliceRstrip(str);
         for(str_rstrip, 0..) |e, i| {
-            if(!char.isSpace(e)){
+            if(!std.ascii.isWhitespace(e)){
                 return str_rstrip[i..];
             }
         }
@@ -112,7 +99,7 @@ pub const u8str = struct {
         var i: usize = str.len;
         while (i > 0) {
             i -= 1;
-            if(!char.isSpace(str[i])){
+            if(!std.ascii.isWhitespace(str[i])){
                 return str[0..i+1];
             }
         }
@@ -129,39 +116,13 @@ pub const u8str = struct {
 };
 
 pub const char = struct {
-    pub fn isAlpha(arg: u8) bool {
-        return switch (arg) {
-            'a'...'z', 'A'...'Z' => true,
-            else => false,
-        };
-    }
-    pub fn isDigit(arg: u8) bool {
-        return switch (arg) {
-            '0'...'9' => true,
-            else => false,
-        };
-    }
     pub fn isOctal(arg: u8) bool {
         return switch (arg) {
             '0'...'7' => true,
             else => false,
         };
     }
-    pub fn isHex(arg: u8) bool {
-        return switch (arg) {
-            '0'...'9', 'a'...'f', 'A'...'F' => true,
-            else => false,
-        };
-    }
-    pub fn isAlnum(arg: u8) bool {
-        return isAlpha(arg) or isDigit(arg);
-    }
-    pub fn isSpace(arg: u8) bool {
-        return switch (arg) {
-            ' ', '\t', '\r', '\n' => true,
-            else => false,
-        };
-    }
+
     pub fn getDecimalValue(arg: u8) u8 {
         switch(arg){
             '0'...'9' => { return arg - '0'; },

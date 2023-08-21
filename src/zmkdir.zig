@@ -76,10 +76,10 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
         .mode => {},
         .context => {},
     }
-    if(util.u8str.startsWith(str, "--")){
+    if(std.mem.startsWith(u8, str, "--")){
         return test_option_validity_and_store(str);
     }
-    else if(util.u8str.startsWith(str, "-") and str.len > 1){
+    else if(std.mem.startsWith(u8, str, "-") and str.len > 1){
         var all_chars_valid_flags = true;
         for(str[1..]) |ch| {
             switch(ch){
@@ -130,7 +130,7 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         flag_verbose = true;
         return true;
     }
-    // if(util.u8str.startsWith(option, "context")){
+    // if(std.mem.startsWith(u8, option, "context")){
     //     // TODO
     //     return true;
     // }
@@ -190,14 +190,24 @@ pub fn main() !u8 {
 
     for(filenames) |dirpath| {
         if(flag_parents){
-            // TODO - convert to manually recursive
-            cwd.makePath(dirpath) catch |err|{
-                try report_mkdir_error(err, dirpath, exe_name);
-                continue;
-            };
+            var it = try std.fs.path.componentIterator(dirpath);
+            var component = it.first();
+            while(component) |c| {
+                component = it.next();
 
-            if(flag_verbose){
-                try stdout.print("{0s}: created directory w/parents '{1s}'\n", .{exe_name, dirpath});
+                cwd.makeDir(c.path) catch |err| switch(err){
+                    error.PathAlreadyExists =>{
+                        continue;
+                    },
+                    else => {
+                        try report_mkdir_error(err, c.path, exe_name);
+                        break;
+                    },
+                };
+
+                if(flag_verbose){
+                    try stdout.print("{0s}: created directory w/parents '{1s}'\n", .{exe_name, c.path});
+                }
             }
         }
         else{

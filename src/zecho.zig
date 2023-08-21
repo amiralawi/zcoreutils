@@ -11,7 +11,7 @@ var args_to_print: std.ArrayList([]const u8) = undefined;
 
 fn parse_cli_args() !void {
     for (args.items[1..]) |arg| {
-        if (util.u8str.startsWith(arg, "-")) {
+        if (std.mem.startsWith(u8, arg, "-")) {
             var arg_is_printable = false;
             var loop_newline = append_newline;
             var loop_escapes = handle_escapes;
@@ -142,7 +142,8 @@ pub fn process_char(ch: u8) !void {
         },
         .hexadecimal => {
             // hexadecimal \xHH, H can be 1 or 2 hex digits
-            if(!util.char.isHex(ch)){
+            
+            if(!std.ascii.isHex(ch)){
                 try print_hex_char();
                 e_state = .unescaped;
                 try process_char(ch);
