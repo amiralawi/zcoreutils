@@ -26,6 +26,7 @@ In order of (approximate) precedence:
 | zwc     | 80%         | probably implements bytes-vs-chars incorrectly, does not implement --files0-from=F
 | ztouch  | 75%         | does not implement timestamp/datestamp options, no-dereference, reference
 | zmkdir  | 50%         | does not implement context/mode
+| ztee    | 50%         | does not implement interrupts
 | ztail   | usable      | demonstrator only, prints 10 lines, no CLI option support yet
 | zcat    | usable      | demonstrator only, prints full file, no CLI option support yet
 | zls     | in-progress | demonstrator only, missing lots of features

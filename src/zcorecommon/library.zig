@@ -3,7 +3,7 @@ const std = @import("std");
 const util = @import("./util.zig");
 
 pub const name = "zcoreutils";
-pub const version = "0.0.3g";
+pub const version = "0.0.3h";
 pub const author = "Amir Alawi";
 pub const copyright_year = "2023";
 

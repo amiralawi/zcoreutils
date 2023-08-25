@@ -159,6 +159,15 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe_zwc);
 
+    const exe_ztee = b.addExecutable(.{
+        .name = "ztee",
+        .root_source_file = .{ .path = "src/ztee.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_ztee);
+
     const exe_test = b.addExecutable(.{
         .name = "test",
         .root_source_file = .{ .path = "src/test.zig" },

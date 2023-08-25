@@ -7,40 +7,35 @@ var stdout: std.fs.File.Writer = undefined;
 var stderr: std.fs.File.Writer = undefined;
 
 
-const base_exe_name = "TEMPLATE";
+const base_exe_name = "ztee";
 const EXIT_FAILURE: u8 = 1;
 const EXIT_SUCCESS: u8 = 0;
 
 pub fn print_usage(exe_name: []const u8) !void {
     try stdout.print(
-        \\Usage: {0s} [OPTION]... FILE...
-        \\Short Description of what this utility does.
-        \\
-        \\A FILE argument that does not exist is created empty, unless -c or -h
-        \\is supplied.
-        \\
-        \\A FILE argument string of - is handled specially and causes touch to
-        \\change the times of the file associated with standard output.
-        \\
-        \\Mandatory arguments to long options are mandatory for short options too.
-        \\  -a                     change only the access time
-        \\  -c, --no-create        do not create any files
-        \\  -d, --date=STRING      parse STRING and use it instead of current time
-        \\  -f                     (ignored)
-        \\  -h, --no-dereference   affect each symbolic link instead of any referenced
-        \\                         file (useful only on systems that can change the
-        \\                         timestamps of a symlink)
-        \\  -m                     change only the modification time
-        \\  -r, --reference=FILE   use this file's times instead of current time
-        \\  -t STAMP               use [[CC]YY]MMDDhhmm[.ss] instead of current time
-        \\      --time=WORD        change the specified time:
-        \\                           WORD is access, atime, or use: equivalent to -a
-        \\                           WORD is modify or mtime: equivalent to -m
-        \\      --help     display this help and exit
-        \\      --version  output version information and exit
-        \\
-        \\Note that the -d and -t options accept different time-date formats.
-        \\
+
+\\Usage: {0s} [OPTION]... [FILE]...
+\\Copy standard input to each FILE, and also to standard output.
+\\
+\\  -a, --append              append to the given FILEs, do not overwrite
+\\      --help     display this help and exit
+\\      --version  output version information and exit
+\\
+\\UNIMPLEMENTED OPTIONS:
+\\  -i, --ignore-interrupts   ignore interrupt signals
+\\  -p                        diagnose errors writing to non pipes
+\\      --output-error[=MODE]   set behavior on write error.  See MODE below
+\\
+\\MODE determines behavior with write errors on the outputs:
+\\  'warn'         diagnose errors writing to any output
+\\  'warn-nopipe'  diagnose errors writing to any output not a pipe
+\\  'exit'         exit on error writing to any output
+\\  'exit-nopipe'  exit on error writing to any output not a pipe
+\\The default MODE for the -p option is 'warn-nopipe'.
+\\The default operation when --output-error is not specified, is to
+\\exit immediately on error writing to a pipe, and diagnose errors
+\\writing to non pipe outputs.
+\\
         , .{ exe_name}
     );
 }
@@ -51,6 +46,7 @@ var expected_option: ExpectedOptionValType = .none;
 var flag_dispVersion = false;
 var flag_dispHelp = false;
 var flag_verbose = false;
+var flag_append = false;
 
 var ignore_options = false;
 pub fn test_option_validity_and_store(str: []const u8) bool {
@@ -67,7 +63,7 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
         var all_chars_valid_flags = true;
         for(str[1..]) |ch| {
             switch(ch){
-                
+                'a' => {},
                 else => { all_chars_valid_flags = false; },
             }
         }
@@ -78,6 +74,7 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
 
         for(str[1..]) |ch| {
             switch(ch){
+                'a' => { flag_append = true; },
                 else => unreachable,
             }
         }
@@ -102,29 +99,35 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         flag_dispHelp = true;
         return true;
     }
+    else if(std.mem.eql(u8, option, "append")){
+        flag_append = true;
+        return true;
+    }
+
+    return false;
 }
 
-pub fn report_exe_error(err: anyerror, filename: []const u8, exe_name: []const u8) !void {
+pub fn report_fileopen_error(err: anyerror, filename: []const u8, exe_name: []const u8) !void {
     switch(err){          
         error.FileNotFound =>{
-            try stderr.print("{s}: cannot remove '{s}': No such file or directory\n", .{exe_name, filename});
+            // TODO - pretty sure this doesn't occur
+            try stderr.print("{s}: '{s}': No such file or directory\n", .{exe_name, filename});
         },
         error.IsDir => {
-            try stderr.print("{s}: cannot remove '{s}': Is a directory\n", .{exe_name, filename});
+            try stderr.print("{s}: {s}: Is a directory\n", .{exe_name, filename});
         },
         error.AccessDenied => {
-            try stderr.print("{s}: cannot remove '{s}': Permission denied\n", .{exe_name, filename});
-        },
-        error.DirNotEmpty => {
-            try stderr.print("{s}: cannot remove '{s}': Directory not empty\n", .{exe_name, filename});
+            try stderr.print("{s}: {s}: Permission denied\n", .{exe_name, filename});
         },
         else => {
-            try stderr.print("{s}: cannot remove '{s}': unrecognized error '{any}'\n", .{exe_name, filename, err});
+            try stderr.print("{s}: {s}: unrecognized error '{any}'\n", .{exe_name, filename, err});
         },
     }
 }
 
+
 pub fn main() !u8 {
+    var exe_return: u8 = EXIT_SUCCESS;
     stdout = std.io.getStdOut().writer();
     stderr = std.io.getStdErr().writer();
 
@@ -159,19 +162,41 @@ pub fn main() !u8 {
     }
     var filenames = args.items[0..nfilenames];
 
-    for(filenames) |filename| {
-        var file = cwd.createFile(filename, .{ .truncate = false }) catch |err| {
-            try report_exe_error(err, filename, exe_name);
+    try stdout.print("append={}\n", .{flag_append});
+
+    var flags: std.fs.File.CreateFlags = .{.truncate = !flag_append};
+
+    // open all output files
+    var files = try std.ArrayList(std.fs.File).initCapacity(heapalloc, filenames.len + 1);
+    try files.append(std.io.getStdOut());
+    for(filenames) |fname| {
+        var f = cwd.createFile(fname, flags) catch |err| {
+            try report_fileopen_error(err, fname, exe_name);
+            exe_return = EXIT_FAILURE;
             continue;
         };
-        if(flag_verbose){
-            try stdout.print("{s}: cannot dosomething '{s}': error desc'\n", .{exe_name, filename});
+        try f.seekFromEnd(0);
+        try files.append(f);
+    }
+    defer {
+        for(files.items[1..]) |f|{
+            f.close();
         }
+    }
+    
+    const buffer_size = 2048;
+    var buffer: [buffer_size]u8 = undefined;
 
-
-        
-        defer file.close();
+    var stdin = std.io.getStdIn();
+    var finished = false;
+    while(!finished){
+        var nread = try stdin.read(&buffer);
+        var readslice = buffer[0..nread];
+        for(files.items) |f| {
+            _ = try f.write(readslice);
+        }
+        finished = (nread == 0);
     }
 
-    return EXIT_SUCCESS;
+    return exe_return;
 }
