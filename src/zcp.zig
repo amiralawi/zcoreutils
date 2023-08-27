@@ -5,14 +5,88 @@ const std = @import("std");
 
 var stdout: std.fs.File.Writer = undefined;
 
-const base_exe_name = "zwc";
+const base_exe_name = "zcp";
 const EXIT_FAILURE: u8 = 1;
 const EXIT_SUCCESS: u8 = 0;
 
 pub fn print_usage(exe_name: []const u8) !void {
     try stdout.print(
-        \\Usage: {0s} [OPTION]... [FILE]...
-        \\  or:  {0s} [OPTION]... --files0-from=F
+        \\Usage: {0s} [OPTION]... [-T] SOURCE DEST
+        \\  or:  {0s} [OPTION]... SOURCE... DIRECTORY
+        \\  or:  {0s} [OPTION]... -t DIRECTORY SOURCE...
+        \\Copy SOURCE to DEST, or multiple SOURCE(s) to DIRECTORY.
+        \\
+        \\Mandatory arguments to long options are mandatory for short options too.
+        \\  -a, --archive                same as -dR --preserve=all
+        \\      --attributes-only        don't copy the file data, just the attributes
+        \\      --backup[=CONTROL]       make a backup of each existing destination file
+        \\  -b                           like --backup but does not accept an argument
+        \\      --copy-contents          copy contents of special files when recursive
+        \\  -d                           same as --no-dereference --preserve=links
+        \\  -f, --force                  if an existing destination file cannot be
+        \\                                 opened, remove it and try again (this option
+        \\                                 is ignored when the -n option is also used)
+        \\  -i, --interactive            prompt before overwrite (overrides a previous -n
+        \\                                  option)
+        \\  -H                           follow command-line symbolic links in SOURCE
+        \\  -l, --link                   hard link files instead of copying
+        \\  -L, --dereference            always follow symbolic links in SOURCE
+        \\  -n, --no-clobber             do not overwrite an existing file (overrides
+        \\                                 a previous -i option)
+        \\  -P, --no-dereference         never follow symbolic links in SOURCE
+        \\  -p                           same as --preserve=mode,ownership,timestamps
+        \\      --preserve[=ATTR_LIST]   preserve the specified attributes (default:
+        \\                                 mode,ownership,timestamps), if possible
+        \\                                 additional attributes: context, links, xattr,
+        \\                                 all
+        \\      --no-preserve=ATTR_LIST  don't preserve the specified attributes
+        \\      --parents                use full source file name under DIRECTORY
+        \\  -R, -r, --recursive          copy directories recursively
+        \\      --reflink[=WHEN]         control clone/CoW copies. See below
+        \\      --remove-destination     remove each existing destination file before
+        \\                                 attempting to open it (contrast with --force)
+        \\      --sparse=WHEN            control creation of sparse files. See below
+        \\      --strip-trailing-slashes  remove any trailing slashes from each SOURCE
+        \\                                 argument
+        \\  -s, --symbolic-link          make symbolic links instead of copying
+        \\  -S, --suffix=SUFFIX          override the usual backup suffix
+        \\  -t, --target-directory=DIRECTORY  copy all SOURCE arguments into DIRECTORY
+        \\  -T, --no-target-directory    treat DEST as a normal file
+        \\  -u, --update                 copy only when the SOURCE file is newer
+        \\                                 than the destination file or when the
+        \\                                 destination file is missing
+        \\  -v, --verbose                explain what is being done
+        \\  -x, --one-file-system        stay on this file system
+        \\  -Z                           set SELinux security context of destination
+        \\                                 file to default type
+        \\      --context[=CTX]          like -Z, or if CTX is specified then set the
+        \\                                 SELinux or SMACK security context to CTX
+        \\      --help     display this help and exit
+        \\      --version  output version information and exit
+        \\
+        \\By default, sparse SOURCE files are detected by a crude heuristic and the
+        \\corresponding DEST file is made sparse as well.  That is the behavior
+        \\selected by --sparse=auto.  Specify --sparse=always to create a sparse DEST
+        \\file whenever the SOURCE file contains a long enough sequence of zero bytes.
+        \\Use --sparse=never to inhibit creation of sparse files.
+        \\
+        \\When --reflink[=always] is specified, perform a lightweight copy, where the
+        \\data blocks are copied only when modified.  If this is not possible the copy
+        \\fails, or if --reflink=auto is specified, fall back to a standard copy.
+        \\Use --reflink=never to ensure a standard copy is performed.
+        \\
+        \\The backup suffix is '~', unless set with --suffix or SIMPLE_BACKUP_SUFFIX.
+        \\The version control method may be selected via the --backup option or through
+        \\the VERSION_CONTROL environment variable.  Here are the values:
+        \\
+        \\  none, off       never make backups (even if --backup is given)
+        \\  numbered, t     make numbered backups
+        \\  existing, nil   numbered if numbered backups exist, simple otherwise
+        \\  simple, never   always make simple backups
+        \\
+        \\As a special case, {0s} makes a backup of SOURCE when the force and backup
+        \\options are given and SOURCE and DEST are the same name for an existing,
+        \\regular file.
         \\
     , .{exe_name});
 }
@@ -171,76 +245,4 @@ pub fn main() !u8 {
     }
 
     return EXIT_SUCCESS;
-    // var retain_filename = true;
-
-    // if (filenames_src.len == 1) {
-    //     var ddir = cwd.openDir(std.fs.path.dirname(filename_dest).?, .{});
-    //     if (ddir) |d| {
-    //         dest_dir = d;
-    //     } else |err| {
-    //         switch (err) {
-    //             error.NotDir => {
-    //                 // replace existing file
-    //                 filename_dest = std.fs.path.dirname(filename_dest).?;
-    //                 retain_filename = false;
-    //             },
-    //             else => {
-    //                 return err;
-    //             },
-    //         }
-    //     }
-    // } else {
-    //     // multiple source files
-    //     var ddir = cwd.openDir(std.fs.path.dirname(filename_dest).?, .{});
-    //     if(ddir) |d| {
-    //         dest_dir = d;
-    //     }
-    //     else |err|{
-    //         switch (err) {
-    //             error.NotDir => {
-    //                 try stdout.print("{s}: target '{s}' is not a directory", .{ exe_name, filename_dest });
-    //             },
-    //             else => {
-    //                 return err;
-    //             },
-    //         }
-    //     }
-
-    //     retain_filename = true;
-    // }
-    // defer dest_dir.close();
-
-    // for (filenames_src) |filename_src| {
-    //     var dest_filename = if (retain_filename) std.fs.path.basename(filename_src) else filename_dest;
-    //     try cwd.copyFile(filename_src, dest_dir, dest_filename, .{});
-    // }
-    // return EXIT_SUCCESS;
-
-    // // else if (filenames.items.len == 2) {
-    // //     var src = filenames.items[0];
-    // //     var dest = filenames.items[1];
-
-    // //     // TODO - this does not catch files with different strings that resolve to the same name
-    // //     // eg ./a.txt and ./somedir/../a.txt
-    // //     if (util.u8str.cmp(src, dest)) {
-    // //         try stdout.print("{s}: '{s}' and '{s}' are the same file\n", .{ exe_name, src, dest });
-    // //         return;
-    // //     }
-
-    // //     try cwd.copyFile(src, cwd, dest, .{});
-    // //     return;
-    // // }
-
-    // // // copy all files to last argument
-    // // var nfiles: usize = filenames.items.len - 1;
-    // // var dest_dirname = filenames.items[nfiles];
-
-    // // var dest_dir = try cwd.openDir(dest_dirname, .{});
-    // // defer dest_dir.close();
-
-    // // for (filenames.items[0..nfiles]) |src| {
-    // //     var dest = std.fs.path.basename(src);
-    // //     try cwd.copyFile(src, dest_dir, dest, .{});
-    // // }
-
 }

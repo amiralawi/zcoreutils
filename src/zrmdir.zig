@@ -6,7 +6,7 @@ const std = @import("std");
 var stdout: std.fs.File.Writer = undefined;
 var stderr: std.fs.File.Writer = undefined;
 
-const base_exe_name = "TEMPLATE";
+const base_exe_name = "zrmdir";
 const EXIT_FAILURE: u8 = 1;
 const EXIT_SUCCESS: u8 = 0;
 

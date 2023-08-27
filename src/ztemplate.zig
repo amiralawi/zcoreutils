@@ -7,7 +7,7 @@ var stdout: std.fs.File.Writer = undefined;
 var stderr: std.fs.File.Writer = undefined;
 
 
-const base_exe_name = "TEMPLATE";
+const base_exe_name = "TEMPLATE FIXME TODO";
 const EXIT_FAILURE: u8 = 1;
 const EXIT_SUCCESS: u8 = 0;
 
@@ -102,6 +102,8 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         flag_dispHelp = true;
         return true;
     }
+
+    return false;
 }
 
 pub fn report_exe_error(err: anyerror, filename: []const u8, exe_name: []const u8) !void {

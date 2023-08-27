@@ -205,6 +205,32 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe_zfalse);
 
+    const exe_zhostname = b.addExecutable(.{
+        .name = "zhostname",
+        .root_source_file = .{ .path = "src/zhostname.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_zhostname);
+
+    const exe_zhostid = b.addExecutable(.{
+        .name = "zhostid",
+        .root_source_file = .{ .path = "src/zhostid.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_zhostid);
+    
+    const exe_zseq = b.addExecutable(.{
+        .name = "zseq",
+        .root_source_file = .{ .path = "src/zseq.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_zseq);
 
 
     //

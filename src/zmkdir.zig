@@ -1,28 +1,3 @@
-// const util = @import("./zcorecommon/util.zig");
-// const cli = @import("./zcorecommon/cli.zig");
-// const std = @import("std");
-
-// var stdout: std.fs.File.Writer = undefined;
-
-// pub fn main() !void {
-//     stdout = std.io.getStdOut().writer();
-
-//     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-//     defer arena.deinit();
-//     const heapalloc = arena.allocator();
-
-//     var args = std.ArrayList([]const u8).init(heapalloc);
-//     try cli.args.appendToArrayList(&args, heapalloc);
-
-//     const cwd = std.fs.cwd();
-//     for(args.items[1..]) |dirpath| {
-//         // TODO - handle CLI options
-
-//         try cwd.makeDir(dirpath);
-//     }
-// }
-
-
 const library = @import("./zcorecommon/library.zig");
 const util = @import("./zcorecommon/util.zig");
 const cli = @import("./zcorecommon/cli.zig");
@@ -31,7 +6,7 @@ const std = @import("std");
 var stdout: std.fs.File.Writer = undefined;
 var stderr: std.fs.File.Writer = undefined;
 
-const base_exe_name = "TEMPLATE";
+const base_exe_name = "mkdir";
 const EXIT_FAILURE: u8 = 1;
 const EXIT_SUCCESS: u8 = 0;
 
