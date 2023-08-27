@@ -168,6 +168,23 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe_ztee);
 
+    
+
+    const exe_zcomm = b.addExecutable(.{
+        .name = "zcomm",
+        .root_source_file = .{ .path = "src/zcomm.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_zcomm);
+
+
+
+    //
+    //
+    //
+
     const exe_test = b.addExecutable(.{
         .name = "test",
         .root_source_file = .{ .path = "src/test.zig" },

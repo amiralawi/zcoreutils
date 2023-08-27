@@ -32,3 +32,4 @@ In order of (approximate) precedence:
 | zls     | in-progress | demonstrator only, missing lots of features
 | zcp     | preliminary | demonstrator only
 | zmv     | preliminary | demonstrator only
+| zcomm   | preliminary | skeleton
