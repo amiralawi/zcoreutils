@@ -168,6 +168,14 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe_ztee);
 
+    const exe_zyes = b.addExecutable(.{
+        .name = "zyes",
+        .root_source_file = .{ .path = "src/zyes.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_zyes);
     
 
     const exe_zcomm = b.addExecutable(.{
@@ -178,6 +186,24 @@ pub fn build(b: *std.Build) void {
         .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zcomm);
+
+    const exe_ztrue = b.addExecutable(.{
+        .name = "ztrue",
+        .root_source_file = .{ .path = "src/ztrue.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_ztrue);
+
+    const exe_zfalse = b.addExecutable(.{
+        .name = "zfalse",
+        .root_source_file = .{ .path = "src/zfalse.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_zfalse);
 
 
 

@@ -17,6 +17,9 @@ In order of (approximate) precedence:
 # Utility Status
 | Utility | Status      | Notes
 | ------- | ----------- |----
+| zyes    | 100%        | 
+| ztrue   | 100%        | 
+| zfalse  | 100%        | 
 | zsleep  | 99%         | need to check error handling, return codes
 | zcksum  | 99%         | need to check error handling, return codes
 | zrmdir  | 99%         | need to check error handling, return codes

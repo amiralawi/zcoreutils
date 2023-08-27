@@ -129,7 +129,7 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         // TODO
         return true;
     }
-    else if(std.mem.startsWith.eql(u8, option, "output-delimiter=")){
+    else if(std.mem.startsWith(u8, option, "output-delimiter=")){
         // TODO
         return true;
     }
@@ -190,34 +190,34 @@ pub fn main() !u8 {
     var filenames = args.items[0..nfilenames];
 
     if(filenames.len == 0){
-        try stdout.print("{0s}: missing operand", .{exe_name});
-        try stdout.print("Try '{0s} --help' for more information.", .{exe_name});
+        try stdout.print("{s}: missing operand", .{exe_name});
+        try stdout.print("Try '{s} --help' for more information.", .{exe_name});
         return EXIT_FAILURE;
     }
     else if(filenames.len == 1){
-        try stdout.print("{0s}: missing operand after '{s}'", .{exe_name, filenames[0]});
-        try stdout.print("Try '{0s} --help' for more information.", .{exe_name});
+        try stdout.print("{s}: missing operand after '{s}'", .{exe_name, filenames[0]});
+        try stdout.print("Try '{s} --help' for more information.", .{exe_name});
         return EXIT_FAILURE;
     }
     else if(filenames.len > 2){
-        try stdout.print("{0s}: extra operand '{s}'", .{exe_name, filenames[2]});
-        try stdout.print("Try '{0s} --help' for more information.", .{exe_name});
+        try stdout.print("{s}: extra operand '{s}'", .{exe_name, filenames[2]});
+        try stdout.print("Try '{s} --help' for more information.", .{exe_name});
         return EXIT_FAILURE;
     }
 
     //
-    var f1: std.fs.File = cwd.openFile(filenames[0]) catch |err|{
-        report_fileopen_error(err);
+    var f1: std.fs.File = cwd.openFile(filenames[0], .{}) catch |err|{
+        try report_fileopen_error(err, exe_name, filenames[0]);
         return EXIT_FAILURE;
     };
     defer f1.close();
-    var f2: std.fs.File = cwd.openFile(filenames[0]) catch |err|{
-        report_fileopen_error(err);
+    var f2: std.fs.File = cwd.openFile(filenames[1], .{}) catch |err|{
+        try report_fileopen_error(err, exe_name, filenames[1]);
         return EXIT_FAILURE;
     };
     defer f2.close();
 
-    
+    // TODO
 
     return EXIT_SUCCESS;
 }
