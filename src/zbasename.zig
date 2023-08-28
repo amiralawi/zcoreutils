@@ -13,19 +13,37 @@ const EXIT_SUCCESS: u8 = 0;
 
 pub fn print_usage(exe_name: []const u8) !void {
     try stdout.print(
-        \\Usage: {0s} [OPTION]... FILE...
-        \\Short Description of what this utility does.
+        \\Usage: {0s} NAME [SUFFIX]
+        \\  or:  {0s} OPTION... NAME...
+        \\Print NAME with any leading directory components removed.
+        \\If specified, also remove a trailing SUFFIX.
+        \\
+        \\Mandatory arguments to long options are mandatory for short options too.
+        \\  -a, --multiple       support multiple arguments and treat each as a NAME
+        \\  -s, --suffix=SUFFIX  remove a trailing SUFFIX; implies -a
+        \\  -z, --zero           end each output line with NUL, not newline
+        \\      --help     display this help and exit
+        \\      --version  output version information and exit
+        \\
+        \\Examples:
+        \\  basename /usr/bin/sort          -> "sort"
+        \\  basename include/stdio.h .h     -> "stdio"
+        \\  basename -s .h include/stdio.h  -> "stdio"
+        \\  basename -a any/str1 any/str2   -> "str1" followed by "str2"
         \\
         , .{ exe_name}
     );
 }
 
-const ExpectedOptionValType = enum { none };
+const ExpectedOptionValType = enum { none, suffix };
 var expected_option: ExpectedOptionValType = .none;
 
 var flag_dispVersion = false;
 var flag_dispHelp = false;
-var flag_verbose = false;
+var flag_multiple = false;
+
+var suffix: []const u8 = "";
+var separator: u8 = '\n';
 
 var ignore_options = false;
 pub fn test_option_validity_and_store(str: []const u8) bool {
@@ -34,7 +52,8 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
     }
     else if(expected_option != .none){
         switch(expected_option){
-            .none => {}
+            .none   => {},
+            .suffix => { suffix = str; },
         }
         expected_option = .none;
         return true;
@@ -46,7 +65,7 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
         var all_chars_valid_flags = true;
         for(str[1..]) |ch| {
             switch(ch){
-                
+                'a', 's', 'z' => {},
                 else => { all_chars_valid_flags = false; },
             }
         }
@@ -57,6 +76,9 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
 
         for(str[1..]) |ch| {
             switch(ch){
+                'a' => { flag_multiple = true; },
+                's' => { flag_multiple = true; expected_option = .suffix; },
+                'z' => { separator = '\x00'; },
                 else => unreachable,
             }
         }
@@ -81,28 +103,20 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         flag_dispHelp = true;
         return true;
     }
+    else if(std.mem.eql(u8, option, "multiple")){
+        flag_multiple = true;
+        return true;
+    }
+    else if(std.mem.eql(u8, option, "zero")){
+        separator = '\x00';
+        return true;
+    }
+    else if(std.mem.startsWith(u8, option, "suffix=")){
+        suffix = option[7..];
+        return true;
+    }
 
     return false;
-}
-
-pub fn report_exe_error(err: anyerror, filename: []const u8, exe_name: []const u8) !void {
-    switch(err){          
-        error.FileNotFound =>{
-            try stderr.print("{s}: cannot remove '{s}': No such file or directory\n", .{exe_name, filename});
-        },
-        error.IsDir => {
-            try stderr.print("{s}: cannot remove '{s}': Is a directory\n", .{exe_name, filename});
-        },
-        error.AccessDenied => {
-            try stderr.print("{s}: cannot remove '{s}': Permission denied\n", .{exe_name, filename});
-        },
-        error.DirNotEmpty => {
-            try stderr.print("{s}: cannot remove '{s}': Directory not empty\n", .{exe_name, filename});
-        },
-        else => {
-            try stderr.print("{s}: cannot remove '{s}': unrecognized error '{any}'\n", .{exe_name, filename, err});
-        },
-    }
 }
 
 pub fn main() !u8 {
@@ -118,7 +132,6 @@ pub fn main() !u8 {
     try cli.args.appendToArrayList(&args, heapalloc);
     var exe_name = args.items[0];
 
-    const cwd = std.fs.cwd();
     var nfilenames: usize = 0;
     for(args.items[1..]) |arg| {
         // Move anything that isn't a valid option to the beginning of args - take the bottom
@@ -138,20 +151,21 @@ pub fn main() !u8 {
             return EXIT_SUCCESS;
         }
     }
+    if(!flag_multiple) { nfilenames = @min(1, nfilenames); }
     var filenames = args.items[0..nfilenames];
 
+    if (filenames.len == 0){
+        try stdout.print("{s}: missing operand", .{exe_name});
+        try stdout.print("Try '{s} --help' for more information.", .{exe_name});
+        return EXIT_FAILURE;
+    }
+
     for(filenames) |filename| {
-        var file = cwd.createFile(filename, .{ .truncate = false }) catch |err| {
-            try report_exe_error(err, filename, exe_name);
-            continue;
-        };
-        if(flag_verbose){
-            try stdout.print("{s}: cannot dosomething '{s}': error desc'\n", .{exe_name, filename});
+        var f: []const u8 = std.fs.path.basename(filename);
+        if(std.mem.endsWith(u8, filename, suffix)){
+            f = f[0..f.len - suffix.len];
         }
-
-
-        
-        defer file.close();
+        try stdout.print("{s}{c}", .{ f, separator });
     }
 
     return EXIT_SUCCESS;
