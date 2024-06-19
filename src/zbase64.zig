@@ -3,6 +3,8 @@ const util = @import("./zcorecommon/util.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
 
+const assert = std.debug.assert;
+
 var stdout: std.fs.File.Writer = undefined;
 var stderr: std.fs.File.Writer = undefined;
 
@@ -100,7 +102,7 @@ pub fn test_long_option_validity_and_store(str: []const u8) !bool {
         return true;
     }
 
-    var option = str[2..];
+    const option = str[2..];
     if(std.mem.eql(u8, option, "version")){
         flag_dispVersion = true;
         return true;
@@ -153,15 +155,6 @@ pub const b64Codec = struct {
     acc_len: u4 = 0,
     n_enc: usize = 0,
 
-    /// Compute the encoded length
-    pub fn calcSize(encoder: *const b64Codec, source_len: usize) usize {
-        if (encoder.pad_char != null) {
-            return @divTrunc(source_len + 2, 3) * 4;
-        } else {
-            const leftover = source_len % 3;
-            return @divTrunc(source_len, 3) * 4 + @divTrunc(leftover * 4 + 2, 3);
-        }
-    }
 
     /// dest.len must at least be what you get from ::calcSize.
     pub fn encodeBatch(self: *b64Codec, dest: []u8, source: []const u8) []const u8 {
@@ -199,9 +192,6 @@ pub const b64Codec = struct {
             for(0..out_len) |i| {
                 dest[out_idx + i] = pad_char;
             }
-            // for (dest[out_idx..out_len]) |*pad| {
-            //     pad.* = pad_char;
-            // }
         }
         
         self.acc_len = 0;
@@ -212,9 +202,95 @@ pub const b64Codec = struct {
     }
 };
 
+pub const Error = error{
+    InvalidCharacter,
+    InvalidPadding,
+    NoSpaceLeft,
+};
+
+pub const b64Decoder = struct {
+    const invalid_char: u8 = 0xff;
+    acc: u12 = 0,
+    acc_len: u4 = 0,
+    n_dec: usize = 0,
+
+    leftover_idx: ?usize = null,
+
+    /// e.g. 'A' => 0.
+    /// `invalid_char` for any value not in the 64 alphabet chars.
+    char_to_index: [256]u8,
+    pad_char: ?u8,
+
+    pub fn init(pad_char: ?u8) b64Decoder {
+        var result = b64Decoder{
+            .char_to_index = [_]u8{invalid_char} ** 256,
+            .pad_char = pad_char,
+        };
+
+        var char_in_alphabet = [_]bool{false} ** 256;
+        for ("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", 0..) |c, i| {
+            assert(!char_in_alphabet[c]);
+            assert(pad_char == null or c != pad_char.?);
+
+            result.char_to_index[c] = @as(u8, @intCast(i));
+            char_in_alphabet[c] = true;
+        }
+        return result;
+    }
+
+    /// dest.len must be what you get from ::calcSize.
+    /// invalid characters result in error.InvalidCharacter.
+    /// invalid padding results in error.InvalidPadding.
+    pub fn decodeBatch(self: *b64Decoder, dest: []u8, source: []const u8) ![]u8 {
+        //var acc: u12 = 0;
+        //var acc_len: u4 = 0;
+        var dest_idx: usize = 0;
+        
+        for (source, 0..) |c, src_idx| {
+            const d = self.char_to_index[c];
+            if (d == invalid_char) {
+                if (self.pad_char == null or c != self.pad_char.?) return error.InvalidCharacter;
+                self.leftover_idx = src_idx;
+                break;
+            }
+            self.acc = (self.acc << 6) + d;
+            self.acc_len += 6;
+            if (self.acc_len >= 8) {
+                self.acc_len -= 8;
+                dest[dest_idx] = @as(u8, @truncate(self.acc >> self.acc_len));
+                dest_idx += 1;
+            }
+        }
+        self.n_dec += dest_idx;
+
+        return dest[0..dest_idx];
+        
+
+    }
+
+    pub fn decodeDanglers(self: *b64Codec, source: []u8) []const u8 {
+        if (self.acc_len > 4 or (self.acc & (@as(u12, 1) << self.acc_len) - 1) != 0) {
+            return error.InvalidPadding;
+        }
+        if (self.leftover_idx == null) return;
+        const leftover = source[self.leftover_idx.?..];
+        if (self.pad_char) |pad_char| {
+            const padding_len = self.acc_len / 2;
+            var padding_chars: usize = 0;
+            for (leftover) |c| {
+                if (c != pad_char) {
+                    return if (c == b64Decoder.invalid_char) error.InvalidCharacter else error.InvalidPadding;
+                }
+                padding_chars += 1;
+            }
+            if (padding_chars != padding_len) return error.InvalidPadding;
+        }
+    }
+};
+
 
 pub fn main() !u8 {
-    var exe_return: u8 = EXIT_SUCCESS;
+    const exe_return: u8 = EXIT_SUCCESS;
     _ = exe_return;
     stdout = std.io.getStdOut().writer();
     stderr = std.io.getStdErr().writer();
@@ -226,7 +302,7 @@ pub fn main() !u8 {
 
     var args = std.ArrayList([]const u8).init(heapalloc);
     try cli.args.appendToArrayList(&args, heapalloc);
-    var exe_name = args.items[0];
+    const exe_name = args.items[0];
 
     const cwd = std.fs.cwd();
     var nfilenames: usize = 0;
@@ -248,7 +324,7 @@ pub fn main() !u8 {
             return EXIT_SUCCESS;
         }
     }
-    var filenames = args.items[0..nfilenames];
+    const filenames = args.items[0..nfilenames];
     var fin: std.fs.File = undefined;
     if(filenames.len == 0 or std.mem.eql(u8, "-", filenames[0])){
         //use std-in
@@ -265,16 +341,15 @@ pub fn main() !u8 {
     
     var buffer_small: [buffer_size]u8   = undefined;
     var buffer_big:   [2*buffer_size]u8 = undefined;
-    const codec = std.base64.standard;
     if(flag_decode){        
-        var dec = std.base64.Base64Decoder.init(codec.alphabet_chars, null);
+        var dec = b64Decoder.init('=');
         var finished = false;
         while(!finished){
-            var nread = try fin.read(&buffer_small);
-            var readslice = buffer_small[0..nread];
-            try dec.decode(&buffer_big, readslice);
-            
-            try stdout.print("{s}", .{buffer_big});
+            const nread = try fin.read(&buffer_small);
+            const readslice = buffer_small[0..nread];
+            const plaintext = try dec.decodeBatch(&buffer_big, readslice);
+
+            try stdout.print("{s}", .{plaintext});
             
             finished = (nread == 0);
         }
@@ -285,12 +360,12 @@ pub fn main() !u8 {
     var enc: b64Codec = .{};
     var finished = false;
     while(!finished){
-        var nread = try fin.read(&buffer_small);
-        var readslice = buffer_small[0..nread];
+        const nread = try fin.read(&buffer_small);
+        const readslice = buffer_small[0..nread];
         //var plaintext = enc.encode(&buffer_big, readslice);
-        var plaintext = enc.encodeBatch(&buffer_big, readslice);
+        const ciphertext = enc.encodeBatch(&buffer_big, readslice);
         
-        try stdout.print("{s}", .{plaintext});
+        try stdout.print("{s}", .{ciphertext});
         
         finished = (nread == 0);
     }

@@ -7,7 +7,7 @@ pub fn ringBuffer(comptime T: type) type {
             i: usize = 0,
             container: *Self,
             pub fn next(self: *@This()) ?*T{
-                var i_get = self.i;
+                const i_get = self.i;
                 self.i += 1;
                 return self.container.peekPtr(i_get);
             }
@@ -16,7 +16,7 @@ pub fn ringBuffer(comptime T: type) type {
             i: usize = 0,
             container: *Self,
             pub fn next(self: *@This()) ?T{
-                var i_get = self.i;
+                const i_get = self.i;
                 self.i += 1;
                 return self.container.peek(i_get);
             }
@@ -61,7 +61,7 @@ pub fn ringBuffer(comptime T: type) type {
 
         pub fn writeForce(self: *@This(), newval: T) ?T {
             if(self.isFull()){
-                var bumped_val = self.read();
+                const bumped_val = self.read();
                 self.write(newval);
                 return bumped_val;
             }
@@ -85,7 +85,7 @@ pub fn ringBuffer(comptime T: type) type {
                 return null;
             }
 
-            var i_ret = self.iread;
+            const i_ret = self.iread;
             self.iread = (self.iread + 1) % (2*self.buffer.len);
             return self.buffer[i_ret % self.buffer.len];
         }

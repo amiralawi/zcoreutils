@@ -12,7 +12,6 @@ const EXIT_SUCCESS: u8 = 0;
 
 pub fn print_usage(exe_name: []const u8) !void {
     try stdout.print(
-
         \\Usage: {0s} [OPTION]... DIRECTORY...
         \\Remove the DIRECTORY(ies), if they are empty.
         \\
@@ -25,8 +24,7 @@ pub fn print_usage(exe_name: []const u8) !void {
         \\      --help     display this help and exit
         \\      --version  output version information and exit
         \\
-        , .{ exe_name}
-    );
+    , .{exe_name});
 }
 
 const ExpectedOptionValType = enum { none };
@@ -40,32 +38,37 @@ var flag_ingoreFailOnNonEmpty = false;
 
 var ignore_options = false;
 pub fn test_option_validity_and_store(str: []const u8) bool {
-    if(ignore_options){
+    if (ignore_options) {
         return false;
     }
-    switch(expected_option){
-        .none => {}
+    switch (expected_option) {
+        .none => {},
     }
-    if(std.mem.startsWith(u8, str, "--")){
+    if (std.mem.startsWith(u8, str, "--")) {
         return test_option_validity_and_store(str);
-    }
-    else if(std.mem.startsWith(u8, str, "-") and str.len > 1){
+    } else if (std.mem.startsWith(u8, str, "-") and str.len > 1) {
         var all_chars_valid_flags = true;
-        for(str[1..]) |ch| {
-            switch(ch){
+        for (str[1..]) |ch| {
+            switch (ch) {
                 'p', 'v' => {},
-                else => { all_chars_valid_flags = false; },
+                else => {
+                    all_chars_valid_flags = false;
+                },
             }
         }
 
-        if(!all_chars_valid_flags){
+        if (!all_chars_valid_flags) {
             return false;
         }
 
-        for(str[1..]) |ch| {
-            switch(ch){
-                'p' => { flag_parents = true; },
-                'v' => { flag_verbose = true; },
+        for (str[1..]) |ch| {
+            switch (ch) {
+                'p' => {
+                    flag_parents = true;
+                },
+                'v' => {
+                    flag_verbose = true;
+                },
                 else => unreachable,
             }
         }
@@ -76,48 +79,50 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
 
 pub fn test_long_option_validity_and_store(str: []const u8) bool {
     // this function only gets called when str starts with "--"
-    if(util.u8str.cmp(str, "--")){
+    if (util.u8str.cmp(str, "--")) {
         ignore_options = true;
         return true;
     }
 
-    var option = str[2..];
-    if(util.u8str.cmp(option, "version")){
+    const option = str[2..];
+    if (util.u8str.cmp(option, "version")) {
         flag_dispVersion = true;
         return true;
     }
-    if(util.u8str.cmp(option, "help")){
+    if (util.u8str.cmp(option, "help")) {
         flag_dispHelp = true;
         return true;
     }
-    if(util.u8str.cmp(option, "parents")){
+    if (util.u8str.cmp(option, "parents")) {
         flag_parents = true;
         return true;
     }
-    if(util.u8str.cmp(option, "verbose")){
+    if (util.u8str.cmp(option, "verbose")) {
         flag_verbose = true;
         return true;
     }
-    if(util.u8str.cmp(option, "ignore-fail-on-non-empty")){
+    if (util.u8str.cmp(option, "ignore-fail-on-non-empty")) {
         flag_ingoreFailOnNonEmpty = true;
         return true;
     }
 }
 
 pub fn report_rmdir_error(err: anyerror, filename: []const u8, exe_name: []const u8) !void {
-    switch(err){          
-        error.FileNotFound =>{
-            try stderr.print("{s}: failed to remove '{s}': No such file or directory\n", .{exe_name, filename});
+    switch (err) {
+        error.FileNotFound => {
+            try stderr.print("{s}: failed to remove '{s}': No such file or directory\n", .{ exe_name, filename });
         },
         error.AccessDenied => {
-            try stderr.print("{s}: failed to remove '{s}': Permission denied\n", .{exe_name, filename});
+            try stderr.print("{s}: failed to remove '{s}': Permission denied\n", .{ exe_name, filename });
         },
         error.DirNotEmpty => {
-            if(flag_ingoreFailOnNonEmpty){ return; }
-            try stderr.print("{s}: failed to remove '{s}': Directory not empty\n", .{exe_name, filename});
+            if (flag_ingoreFailOnNonEmpty) {
+                return;
+            }
+            try stderr.print("{s}: failed to remove '{s}': Directory not empty\n", .{ exe_name, filename });
         },
         else => {
-            try stderr.print("{s}: failed to remove '{s}': unrecognized error '{any}'\n", .{exe_name, filename, err});
+            try stderr.print("{s}: failed to remove '{s}': unrecognized error '{any}'\n", .{ exe_name, filename, err });
         },
     }
 }
@@ -130,53 +135,52 @@ pub fn main() !u8 {
     defer arena.deinit();
     const heapalloc = arena.allocator();
 
-
     var args = std.ArrayList([]const u8).init(heapalloc);
     try cli.args.appendToArrayList(&args, heapalloc);
-    var exe_name = args.items[0];
+    const exe_name = args.items[0];
 
     const cwd = std.fs.cwd();
     var nfilenames: usize = 0;
-    for(args.items[1..]) |arg| {
+    for (args.items[1..]) |arg| {
         // Move anything that isn't a valid option to the beginning of args - take the bottom
         // slice for use as filenames later
-        if(!test_option_validity_and_store(arg)){
+        if (!test_option_validity_and_store(arg)) {
             args.items[nfilenames] = arg;
             nfilenames += 1;
         }
 
         // allow early exit
-        if(flag_dispHelp){
+        if (flag_dispHelp) {
             try print_usage(exe_name);
             return EXIT_SUCCESS;
         }
-        if(flag_dispVersion){
+        if (flag_dispVersion) {
             try library.print_exe_version(stdout, base_exe_name);
             return EXIT_SUCCESS;
         }
     }
-    
-    var filenames = args.items[0..nfilenames];
-    if(filenames.len == 0){
+
+    const filenames = args.items[0..nfilenames];
+    if (filenames.len == 0) {
         try stderr.print("{s}: missing operand\n", .{exe_name});
         try stderr.print("Try '{s} --help' for more information.\n", .{exe_name});
         return EXIT_FAILURE;
     }
 
-    for(filenames) |filename| {
-        if(flag_verbose){
-            try stdout.print("{0s}: removing directory, '{1s}'\n", .{exe_name, filename});
+    for (filenames) |filename| {
+        if (flag_verbose) {
+            try stdout.print("{0s}: removing directory, '{1s}'\n", .{ exe_name, filename });
         }
         cwd.deleteDir(filename) catch |err| {
             try report_rmdir_error(err, filename, exe_name);
         };
 
-        if(flag_parents){
+        if (flag_parents) {
             var it = try std.fs.path.componentIterator(filename);
             _ = it.last();
-            while(it.previous()) |c| {
-                if(flag_verbose){
-                    try stdout.print("{0s}: removing directory, '{1s}'\n", .{exe_name, c.path});
+            while (it.previous()) |c| {
+                if (flag_verbose) {
+                    try stdout.print("{0s}: removing directory, '{1s}'\n", .{ exe_name, c.path });
                 }
 
                 cwd.deleteDir(c.path) catch |err| {

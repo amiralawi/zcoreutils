@@ -23,8 +23,8 @@ pub fn tail_file(file: std.fs.File) !void {
     var finished = false;
     var filesize: usize = 0;
     while(!finished){
-        var nread = try file.read(&readbuffer);
-        var readslice = readbuffer[0..nread];
+        const nread = try file.read(&readbuffer);
+        const readslice = readbuffer[0..nread];
         for(readslice) |ch|{
             if(ch == '\n') {
                 try linenumbers.append(i_ch);
@@ -54,8 +54,8 @@ pub fn tail_file(file: std.fs.File) !void {
     try file.seekTo(i_printstart);
     finished = false;
     while(!finished){
-        var nread = try file.read(&readbuffer);
-        var readslice = readbuffer[0..nread];
+        const nread = try file.read(&readbuffer);
+        const readslice = readbuffer[0..nread];
         try stdout.print("{s}", .{readslice});
         finished = (nread == 0);
     }
@@ -91,7 +91,7 @@ pub fn tail_file_unseekable(file: std.fs.File) !void {
 
     const alloc = std.heap.page_allocator;
     
-    var lines_buffer_raw = try alloc.alloc(std.ArrayList(substr), n_lines_max);
+    const lines_buffer_raw = try alloc.alloc(std.ArrayList(substr), n_lines_max);
     defer alloc.free(lines_buffer_raw);
 
     var linesRing = generic.ringBuffer(std.ArrayList(substr)).init(lines_buffer_raw);
@@ -117,12 +117,12 @@ pub fn tail_file_unseekable(file: std.fs.File) !void {
             }
             if(ch == '\n'){
                 if(linesRing.isFull()){
-                    var overflow = linesRing.read();
+                    const overflow = linesRing.read();
                     if(overflow) |popped| {
                         // free overflowed parent buffers if they are not also consumed
                         // by the next item in the ring buffer
-                        var next_line = linesRing.peekPtr(0) orelse unreachable;
-                        var next_parent = (next_line.*).items[0].parent;
+                        const next_line = linesRing.peekPtr(0) orelse unreachable;
+                        const next_parent = (next_line.*).items[0].parent;
 
                         for(popped.items) |s|{
                             if(s.parent.ptr == next_parent.ptr){
@@ -147,10 +147,10 @@ pub fn tail_file_unseekable(file: std.fs.File) !void {
 
     // handle dangling str
     if(istart != newbytes.len){
-        var overflow = linesRing.read();
+        const overflow = linesRing.read();
         if(overflow) |popped| {
-            var next_line = linesRing.peekPtr(0) orelse unreachable;
-            var next_parent = (next_line.*).items[0].parent;
+            const next_line = linesRing.peekPtr(0) orelse unreachable;
+            const next_parent = (next_line.*).items[0].parent;
 
             // need to free overflow memory
             for(popped.items) |s|{
@@ -170,7 +170,7 @@ pub fn tail_file_unseekable(file: std.fs.File) !void {
     var iter = linesRing.peekPtrItems();
     while(iter.next()) |line| {
         for((line.*).items) |str| {
-            var s = str.str;
+            const s = str.str;
             try stdout.print("{s}", .{s});
         }
     }
@@ -217,7 +217,7 @@ pub fn main() !void {
 
     if(filenames.items.len == 0){
         // no file argument passed, read standard input instead
-        var stdin = std.io.getStdIn();
+        const stdin = std.io.getStdIn();
         // TODO - write function that keeps 10 most recent lines in memory (tail_file_kim)
         //        once stdin stops, print
         //_ = stdin;
@@ -227,7 +227,7 @@ pub fn main() !void {
     }
 
     var cwd = std.fs.cwd();
-    var exe_name = args.items[0];
+    const exe_name = args.items[0];
     for(filenames.items, 0..) |filename, i_file| {
         linenumbers.clearRetainingCapacity();
         
@@ -247,7 +247,7 @@ pub fn main() !void {
         
         // 2 - print filename if we have more than one file
         if(args.items.len > 2){
-            var prefix = if(i_file > 0) "\n" else "";
+            const prefix = if(i_file > 0) "\n" else "";
             try stdout.print("{s}==> {s} <==\n", .{prefix, filename});
         }
 

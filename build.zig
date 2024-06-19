@@ -14,13 +14,17 @@ pub fn build(b: *std.Build) void {
     // Standard optimization options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
     // set a preferred release mode, allowing the user to decide how to optimize.
-    
+
     const optimize = b.standardOptimizeOption(.{});
     //const optimize = std.builtin.Mode.ReleaseSmall;
 
-    var single_threaded = builtin.single_threaded;
+    const zargh = b.dependency("zargh", .{
+        .optimize = optimize,
+        .target = target,
+    });
+
+    const single_threaded = builtin.single_threaded;
     //var single_threaded = true;
-    
 
     const exe = b.addExecutable(.{
         .name = "zls",
@@ -37,7 +41,6 @@ pub fn build(b: *std.Build) void {
     // step when running `zig build`).
     b.installArtifact(exe);
 
-
     // additional executables
     const exe_zecho = b.addExecutable(.{
         .name = "zecho",
@@ -46,8 +49,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
+    exe_zecho.root_module.addImport("zargh", zargh.module("zargh"));
     b.installArtifact(exe_zecho);
-
 
     const exe_zhead = b.addExecutable(.{
         .name = "zhead",
@@ -76,7 +79,6 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe_zcat);
 
-
     const exe_ztouch = b.addExecutable(.{
         .name = "ztouch",
         .root_source_file = .{ .path = "src/ztouch.zig" },
@@ -95,7 +97,6 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe_zmkdir);
 
-
     const exe_zrm = b.addExecutable(.{
         .name = "zrm",
         .root_source_file = .{ .path = "src/zrm.zig" },
@@ -103,6 +104,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
+    exe_zrm.root_module.addImport("zargh", zargh.module("zargh"));
     b.installArtifact(exe_zrm);
 
     const exe_zrmdir = b.addExecutable(.{
@@ -121,7 +123,6 @@ pub fn build(b: *std.Build) void {
         .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zcp);
-
 
     const exe_zmv = b.addExecutable(.{
         .name = "zmv",
@@ -149,7 +150,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zcksum);
-    
+
     const exe_zwc = b.addExecutable(.{
         .name = "zwc",
         .root_source_file = .{ .path = "src/zwc.zig" },
@@ -175,8 +176,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
+    exe_zyes.root_module.addImport("zargh", zargh.module("zargh"));
     b.installArtifact(exe_zyes);
-    
 
     const exe_zcomm = b.addExecutable(.{
         .name = "zcomm",
@@ -194,6 +195,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
+    exe_ztrue.root_module.addImport("zargh", zargh.module("zargh"));
     b.installArtifact(exe_ztrue);
 
     const exe_zfalse = b.addExecutable(.{
@@ -203,6 +205,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
+    exe_zfalse.root_module.addImport("zargh", zargh.module("zargh"));
     b.installArtifact(exe_zfalse);
 
     const exe_zhostname = b.addExecutable(.{
@@ -222,7 +225,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = single_threaded,
     });
     b.installArtifact(exe_zhostid);
-    
+
     const exe_zseq = b.addExecutable(.{
         .name = "zseq",
         .root_source_file = .{ .path = "src/zseq.zig" },
@@ -239,6 +242,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
+    exe_zbasename.root_module.addImport("zargh", zargh.module("zargh"));
     b.installArtifact(exe_zbasename);
 
     const exe_zbase64 = b.addExecutable(.{
@@ -250,6 +254,51 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe_zbase64);
 
+    const exe_zpwd = b.addExecutable(.{
+        .name = "zpwd",
+        .root_source_file = .{ .path = "src/zpwd.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_zpwd);
+
+    const exe_zfold = b.addExecutable(.{
+        .name = "zfold",
+        .root_source_file = .{ .path = "src/zfold.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_zfold);
+
+    const exe__working = b.addExecutable(.{
+        .name = "_working",
+        .root_source_file = .{ .path = "src/_working.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe__working);
+
+    // const exe__argparse = b.addExecutable(.{
+    //     .name = "_argparse",
+    //     .root_source_file = .{ .path = "src/_argparse.zig" },
+    //     .target = target,
+    //     .optimize = optimize,
+    //     .single_threaded = single_threaded,
+    // });
+    // b.installArtifact(exe__argparse);
+
+    const exe_argparse = b.addExecutable(.{
+        .name = "argparse",
+        .root_source_file = .{ .path = "src/argparse.zig" },
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = single_threaded,
+    });
+    b.installArtifact(exe_argparse);
+
     // const exe_zwget = b.addExecutable(.{
     //     .name = "zwget",
     //     .root_source_file = .{ .path = "src/zwget.zig" },
@@ -258,7 +307,6 @@ pub fn build(b: *std.Build) void {
     //     .single_threaded = single_threaded,
     // });
     // b.installArtifact(exe_zwget);
-
 
     //
     //
@@ -272,9 +320,6 @@ pub fn build(b: *std.Build) void {
         .single_threaded = single_threaded,
     });
     b.installArtifact(exe_test);
-
-
-    
 
     // This *creates* a RunStep in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish

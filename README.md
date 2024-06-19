@@ -15,29 +15,29 @@ In order of (approximate) precedence:
 4. Minimize code size
 
 # Utility Status
-| Utility   | Status      | Notes
-| --------- | ----------- |--------
-| zbasename | 100%        | 
-| zfalse    | 100%        | 
-| ztrue     | 100%        | 
-| zyes      | 100%        | 
-| zsleep    | 99%         | need to check error handling, return codes
-| zcksum    | 99%         | need to check error handling, return codes
-| zrmdir    | 99%         | need to check error handling, return codes
-| zecho     | 95%         | does not currently support \e, \E, \u, \U
-| zrm       | 90%         | Missing -I resurive prompting. Does not implement: --no-preserve-root, --preserve-root=all, --one-file-system
-| zhead     | 85%         | does not support: long --bytes and --lines options, negative bytecount/linecount
-| zwc       | 80%         | probably implements bytes-vs-chars incorrectly, does not implement --files0-from=F
-| ztouch    | 75%         | does not implement timestamp/datestamp options, no-dereference, reference
-| zmkdir    | 50%         | does not implement context/mode
-| ztee      | 50%         | does not implement interrupts
-| zseq      | 50%         | does not implement floating-point or equal-width
-| ztail     | usable      | demonstrator only, prints 10 lines, no CLI option support yet
-| zcat      | usable      | demonstrator only, prints full file, no CLI option support yet
-| hostname  | 5%          | doesn't take arguments
-| zls       | in-progress | demonstrator only, missing lots of features
-| zcp       | preliminary | demonstrator only
-| zmv       | preliminary | demonstrator only
-| zcomm     | preliminary | skeleton
-| hostid    | preliminary | skeleton
-| base64    | preliminary | skeleton
+| Utility   | Status      | zargh?   | Notes
+| --------- | ----------- |----------|--------
+| zbasename | 100%        | yes      | 
+| zfalse    | 100%        | yes      | 
+| ztrue     | 100%        | yes      | 
+| zyes      | 100%        | yes      | 
+| zsleep    | 99%         |          | need to check error handling, return codes
+| zcksum    | 99%         |          | need to check error handling, return codes
+| zrmdir    | 99%         |          | need to check error handling, return codes
+| zecho     | 95%         |          | does not currently support \e, \E, \u, \U
+| zrm       | 90%         | yes      | Missing -I resurive prompting. Does not implement: --no-preserve-root, --preserve-root=all, --one-file-system
+| zhead     | 85%         |          | does not support: long --bytes and --lines options, negative bytecount/linecount
+| zwc       | 80%         |          | probably implements bytes-vs-chars incorrectly, does not implement --files0-from=F
+| ztouch    | 75%         |          | does not implement timestamp/datestamp options, no-dereference, reference
+| zmkdir    | 50%         |          | does not implement context/mode
+| ztee      | 50%         |          | does not implement interrupts
+| zseq      | 50%         |          | does not implement floating-point or equal-width
+| ztail     | usable      |          | demonstrator only, prints 10 lines, no CLI option support yet
+| zcat      | usable      |          | demonstrator only, prints full file, no CLI option support yet
+| hostname  | 5%          |          | doesn't take arguments
+| zls       | in-progress |          | demonstrator only, missing lots of features
+| zcp       | preliminary |          | demonstrator only
+| zmv       | preliminary |          | demonstrator only
+| zcomm     | preliminary |          | skeleton
+| hostid    | preliminary |          | skeleton
+| base64    | preliminary |          | skeleton

@@ -139,17 +139,15 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         return true;
     }
 
-    var option = str[2..];
+    const option = str[2..];
     if (util.u8str.cmp(option, "version")) {
         flag_dispVersion = true;
         return true;
-    }
-    else if (util.u8str.cmp(option, "help")) {
+    } else if (util.u8str.cmp(option, "help")) {
         flag_dispHelp = true;
         return true;
     }
 }
-
 
 pub fn main() !u8 {
     stdout = std.io.getStdOut().writer();
@@ -160,11 +158,11 @@ pub fn main() !u8 {
 
     var args = std.ArrayList([]const u8).init(heapalloc);
     try cli.args.appendToArrayList(&args, heapalloc);
-    var exe_name = args.items[0];
+    const exe_name = args.items[0];
 
     // var options = std.ArrayList([]const u8).init(heapalloc);
     // var filenames = std.ArrayList([]const u8).init(heapalloc);
-    // var exe_name = args.items[0];
+    // const exe_name = args.items[0];
 
     var nfilenames: usize = 0;
     for (args.items[1..]) |arg| {
@@ -197,14 +195,14 @@ pub fn main() !u8 {
         return EXIT_FAILURE;
     }
 
-    var filename_dest = filenames[filenames.len - 1];
+    const filename_dest = filenames[filenames.len - 1];
     const filenames_src = filenames[0 .. filenames.len - 1];
 
     var dest_dir: std.fs.Dir = undefined;
 
     const cwd = std.fs.cwd();
 
-    var stat_dest = cwd.statFile(filename_dest);
+    const stat_dest = cwd.statFile(filename_dest);
     if (stat_dest) |s| {
         // file exists - overwrite file into filename_dest
         if (s.kind != .directory and filenames_src.len > 1) {
@@ -212,13 +210,13 @@ pub fn main() !u8 {
             return EXIT_FAILURE;
         }
 
-        var ddir = std.fs.path.dirname(filename_dest) orelse ".";
+        const ddir = std.fs.path.dirname(filename_dest) orelse ".";
         dest_dir = try cwd.openDir(ddir, .{});
     } else |err| {
         switch (err) {
             error.FileNotFound => {
                 // copy file into filename_dest
-                var ddir = std.fs.path.dirname(filename_dest) orelse ".";
+                const ddir = std.fs.path.dirname(filename_dest) orelse ".";
                 dest_dir = try cwd.openDir(ddir, .{});
             },
             error.IsDir => {
@@ -233,7 +231,7 @@ pub fn main() !u8 {
     defer dest_dir.close();
 
     for (filenames_src) |filename_src| {
-        var basename = std.fs.path.basename(filename_src);
+        const basename = std.fs.path.basename(filename_src);
         cwd.copyFile(filename_src, dest_dir, basename, .{}) catch |err| {
             switch (err) {
                 error.IsDir => {

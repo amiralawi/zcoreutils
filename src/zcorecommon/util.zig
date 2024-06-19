@@ -14,14 +14,34 @@ const maxInt = std.math.maxInt;
 const is_windows = builtin.os.tag == .windows;
 
 pub const u8str = struct {
+    pub const hash = struct {
+        pub fn pop32(str: []const u8) u32 {
+            // taken from:
+            // https://stackoverflow.com/questions/2351087/what-is-the-best-32bit-hash-function-for-short-strings-tag-names
+            //
+            // which is taken from:
+            // The Practice of Programming (HASH TABLES, pg. 57)
+
+            // Empirically, the values 31 and 37 have proven to be good choices for the
+            // multiplier in a hash function for ASCII strings.
+            const multiplier = 31;
+
+            var h: u32 = 0;
+            for (str) |c| {
+                h = multiplier *% h +% c;
+            }
+            return h;
+        }
+    };
+
     pub fn lessThan(context: void, a: []const u8, b: []const u8) bool {
         _ = context;
-        var na = a.len;
-        var nb = b.len;
-        var imax: usize = @min(na, nb);
+        const na = a.len;
+        const nb = b.len;
+        const imax: usize = @min(na, nb);
         for (0..imax) |i| {
-            var ca = a[i];
-            var cb = b[i];
+            const ca = a[i];
+            const cb = b[i];
             if (ca < cb) {
                 return true;
             } else if (ca > cb) {
@@ -33,7 +53,7 @@ pub const u8str = struct {
         return false;
     }
 
-    pub fn cmp(a: []const u8, b:[]const u8) bool {
+    pub fn cmp(a: []const u8, b: []const u8) bool {
         // opposite (now correct) polarity to c-strcmp
         return std.mem.eql(u8, a, b);
     }
@@ -59,8 +79,8 @@ pub const u8str = struct {
     // }
 
     pub fn findChar(str: []const u8, ch: u8) isize {
-        for(str, 0..) |e, i| {
-            if(e == ch){
+        for (str, 0..) |e, i| {
+            if (e == ch) {
                 return i;
             }
         }
@@ -69,9 +89,9 @@ pub const u8str = struct {
 
     pub fn rfindChar(str: []const u8, ch: u8) isize {
         var i = str.len;
-        while(i > 0){
+        while (i > 0) {
             i -= 1;
-            if(str[i] == ch){
+            if (str[i] == ch) {
                 return @intCast(i);
             }
         }
@@ -79,8 +99,8 @@ pub const u8str = struct {
     }
 
     pub fn sliceLine(str: []const u8) []const u8 {
-        for(str, 1..) |e, i| {
-            if(e == '\n'){
+        for (str, 1..) |e, i| {
+            if (e == '\n') {
                 return str[0..i];
             }
         }
@@ -88,8 +108,8 @@ pub const u8str = struct {
     }
     pub fn sliceStrip(str: []const u8) []const u8 {
         var str_rstrip = sliceRstrip(str);
-        for(str_rstrip, 0..) |e, i| {
-            if(!std.ascii.isWhitespace(e)){
+        for (str_rstrip, 0..) |e, i| {
+            if (!std.ascii.isWhitespace(e)) {
                 return str_rstrip[i..];
             }
         }
@@ -99,18 +119,18 @@ pub const u8str = struct {
         var i: usize = str.len;
         while (i > 0) {
             i -= 1;
-            if(!std.ascii.isWhitespace(str[i])){
-                return str[0..i+1];
+            if (!std.ascii.isWhitespace(str[i])) {
+                return str[0 .. i + 1];
             }
         }
         return str[0..0];
     }
     pub fn sliceLineRstrip(str: []const u8) []const u8 {
-        var line = sliceLine(str);
+        const line = sliceLine(str);
         return sliceRstrip(line);
     }
     pub fn sliceLineStrip(str: []const u8) []const u8 {
-        var line = sliceLineRstrip(str);
+        const line = sliceLineRstrip(str);
         return sliceStrip(line);
     }
 };
@@ -124,23 +144,39 @@ pub const char = struct {
     }
 
     pub fn getDecimalValue(arg: u8) u8 {
-        switch(arg){
-            '0'...'9' => { return arg - '0'; },
-            else => { return 0; },
+        switch (arg) {
+            '0'...'9' => {
+                return arg - '0';
+            },
+            else => {
+                return 0;
+            },
         }
     }
     pub fn getHexValue(arg: u8) u8 {
-        switch(arg){
-            '0'...'9' => { return arg - '0'; },
-            'a'...'f' => { return arg - 'a' + 10; },
-            'A'...'F' => { return arg - 'A' + 10; },
-            else => { return 0; },
+        switch (arg) {
+            '0'...'9' => {
+                return arg - '0';
+            },
+            'a'...'f' => {
+                return arg - 'a' + 10;
+            },
+            'A'...'F' => {
+                return arg - 'A' + 10;
+            },
+            else => {
+                return 0;
+            },
         }
     }
     pub fn getOctalValue(arg: u8) u8 {
-        switch(arg){
-            '0'...'7' => { return arg - '0'; },
-            else => { return 0; },
+        switch (arg) {
+            '0'...'7' => {
+                return arg - '0';
+            },
+            else => {
+                return 0;
+            },
         }
     }
 };
@@ -148,7 +184,7 @@ pub const char = struct {
 pub const terminal = struct {
     pub fn getSize() !Vec2i {
         var ws: os.linux.winsize = undefined;
-        var ret = os.linux.ioctl(os.STDOUT_FILENO, os.linux.T.IOCGWINSZ, @intFromPtr(&ws));
+        const ret = os.linux.ioctl(os.STDOUT_FILENO, os.linux.T.IOCGWINSZ, @intFromPtr(&ws));
         if (ret == -1) {
             return error.ioctl;
         }
@@ -159,7 +195,7 @@ pub const terminal = struct {
 pub const Vec2i = struct { x: i32 = 0, y: i32 = 0 };
 
 pub fn gnomeSort(comptime T: type, items: []T, context: anytype, comptime lessThan: fn (context: @TypeOf(context), lhs: T, rhs: T) bool) void {
-    var n = items.len;
+    const n = items.len;
 
     //std.sort.insertionSort(comptime T: type, items: []T, context: anytype, comptime lessThan: fn(context:@TypeOf(context), lhs:T, rhs:T)bool)
     var pos: usize = 0;
@@ -167,7 +203,7 @@ pub fn gnomeSort(comptime T: type, items: []T, context: anytype, comptime lessTh
         if (pos == 0 or !lessThan({}, items[pos], items[pos - 1])) {
             pos += 1;
         } else {
-            var temp: T = items[pos];
+            const temp: T = items[pos];
             items[pos] = items[pos - 1];
             items[pos - 1] = temp;
             pos -= 1;
@@ -175,46 +211,3 @@ pub fn gnomeSort(comptime T: type, items: []T, context: anytype, comptime lessTh
     }
 }
 
-pub const File = struct{
-    pub const UpdateTimeSV = enum(isize) { ignore, UTIME_NOW, UTIME_OMIT, };
-    pub const SPECIAL_VALUE_UTIME_NOW  = 0x3fffffff;
-    pub const SPECIAL_VALUE_UTIME_OMIT = 0x3ffffffe;
-    pub fn updateTimesSpecial(
-        file: std.fs.File,
-        /// access timestamp in nanoseconds
-        atime: i128,
-        /// last modification timestamp in nanoseconds
-        mtime: i128,
-        atime_sv: UpdateTimeSV,
-        mtime_sv: UpdateTimeSV,
-    ) std.fs.File.UpdateTimesError!void {
-        if (builtin.os.tag == .windows) {
-            const atime_ft = windows.nanoSecondsToFileTime(atime);
-            const mtime_ft = windows.nanoSecondsToFileTime(mtime);
-            return windows.SetFileTime(file.handle, null, &atime_ft, &mtime_ft);
-        }
-        var times = [2]os.timespec{
-            os.timespec{
-                .tv_sec = math.cast(isize, @divFloor(atime, std.time.ns_per_s)) orelse maxInt(isize),
-                .tv_nsec = math.cast(isize, @mod(atime, std.time.ns_per_s)) orelse maxInt(isize),
-            },
-            os.timespec{
-                .tv_sec = math.cast(isize, @divFloor(mtime, std.time.ns_per_s)) orelse maxInt(isize),
-                .tv_nsec = math.cast(isize, @mod(mtime, std.time.ns_per_s)) orelse maxInt(isize),
-            },
-        };
-
-        switch(atime_sv){
-            .UTIME_NOW  => { times[0].tv_nsec = SPECIAL_VALUE_UTIME_NOW;  },
-            .UTIME_OMIT => { times[0].tv_nsec = SPECIAL_VALUE_UTIME_OMIT; },
-            .ignore     => {},
-        }
-        switch(mtime_sv){
-            .UTIME_NOW  => { times[1].tv_nsec = SPECIAL_VALUE_UTIME_NOW;  },
-            .UTIME_OMIT => { times[1].tv_nsec = SPECIAL_VALUE_UTIME_OMIT; },
-            .ignore     => {},
-        }
-        try os.futimens(file.handle, &times);
-    }
-
-};

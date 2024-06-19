@@ -43,7 +43,7 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         return true;
     }
 
-    var option = str[2..];
+    const option = str[2..];
     if (std.mem.eql(u8, option, "version")) {
         flag_dispVersion = true;
         return true;
@@ -65,7 +65,7 @@ pub fn main() !u8 {
 
     var args = std.ArrayList([]const u8).init(heapalloc);
     try cli.args.appendToArrayList(&args, heapalloc);
-    var exe_name = args.items[0];
+    const exe_name = args.items[0];
 
     var n_unprocessed: usize = 0;
     for (args.items[1..]) |arg| {
@@ -86,7 +86,7 @@ pub fn main() !u8 {
             return EXIT_SUCCESS;
         }
     }
-    var unprocessed_args = args.items[0..n_unprocessed];
+    const unprocessed_args = args.items[0..n_unprocessed];
     _ = unprocessed_args;
 
     // TODO - no implementation

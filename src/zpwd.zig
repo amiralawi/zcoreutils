@@ -6,70 +6,55 @@ const std = @import("std");
 var stdout: std.fs.File.Writer = undefined;
 var stderr: std.fs.File.Writer = undefined;
 
-const base_exe_name = "hostname";
+const base_exe_name = "zpwd";
 const EXIT_FAILURE: u8 = 1;
 const EXIT_SUCCESS: u8 = 0;
 
 pub fn print_usage(exe_name: []const u8) !void {
     try stdout.print(
-        \\Usage: {0s} [-b] {{hostname|-F file}}         set host name (from file)
-        \\       {0s} [-a|-A|-d|-f|-i|-I|-s|-y]       display formatted name
-        \\       {0s}                                 display host name
+        \\Usage: {0s} [OPTION]...
+        \\Print the full filename of the current working directory.
         \\
-        \\       {{yp,nis,}}domainname {{nisdomain|-F file}}  set NIS domain name (from file)
-        \\       {{yp,nis,}}{0s}domainname                      display NIS domain name
+        \\  -L, --logical   use PWD from environment, even if it contains symlinks
+        \\  -P, --physical  avoid all symlinks
+        \\      --help     display this help and exit
+        \\      --version  output version information and exit
         \\
-        \\       dnsdomainname                            display dns domain name
+        \\If no option is specified, -P is assumed.
         \\
-        \\       {0s} -V|--version|-h|--help          print info and exit
-        \\
-        \\Program name:
-        \\       {{yp,nis,}}domainname=hostname -y
-        \\       dnsdomainname=hostname -d
-        \\
-        \\Program options:
-        \\    -a, --alias            alias names
-        \\    -A, --all-fqdns        all long host names (FQDNs)
-        \\    -b, --boot             set default hostname if none available
-        \\    -d, --domain           DNS domain name
-        \\    -f, --fqdn, --long     long host name (FQDN)
-        \\    -F, --file             read host name or NIS domain name from given file
-        \\    -i, --ip-address       addresses for the host name
-        \\    -I, --all-ip-addresses all addresses for the host
-        \\    -s, --short            short host name
-        \\    -y, --yp, --nis        NIS/YP domain name
-        \\
-        \\Description:
-        \\   This command can get or set the host name or the NIS domain name. You can
-        \\   also get the DNS domain or the FQDN (fully qualified domain name).
-        \\   Unless you are using bind or NIS for host lookups you can change the
-        \\   FQDN (Fully Qualified Domain Name) and the DNS domain name (which is
-        \\   part of the FQDN) in the /etc/hosts file.
+        \\NOTE: your shell may have its own version of pwd, which usually supersedes
+        \\the version described here.  Please refer to your shell's documentation
+        \\for details about the options it supports.
         \\
     , .{exe_name});
 }
 
 const ExpectedOptionValType = enum { none };
+
 var expected_option: ExpectedOptionValType = .none;
 
 var flag_dispVersion = false;
 var flag_dispHelp = false;
-var flag_verbose = false;
+var flag_logical = true;
+var flag_physical = false;
 
 var ignore_options = false;
 pub fn test_option_validity_and_store(str: []const u8) bool {
     if (ignore_options) {
         return false;
-    }
-    switch (expected_option) {
-        .none => {},
-    }
-    if (std.mem.startsWith(u8, str, "--")) {
+    } else if (expected_option != .none) {
+        switch (expected_option) {
+            .none => {},
+        }
+        expected_option = .none;
+        return true;
+    } else if (std.mem.startsWith(u8, str, "--")) {
         return test_long_option_validity_and_store(str);
     } else if (std.mem.startsWith(u8, str, "-") and str.len > 1) {
         var all_chars_valid_flags = true;
         for (str[1..]) |ch| {
             switch (ch) {
+                'L', 'P' => {},
                 else => {
                     all_chars_valid_flags = false;
                 },
@@ -82,6 +67,14 @@ pub fn test_option_validity_and_store(str: []const u8) bool {
 
         for (str[1..]) |ch| {
             switch (ch) {
+                'L' => {
+                    flag_logical = true;
+                    flag_physical = false;
+                },
+                'P' => {
+                    flag_logical = false;
+                    flag_physical = true;
+                },
                 else => unreachable,
             }
         }
@@ -103,6 +96,14 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         return true;
     } else if (std.mem.eql(u8, option, "help")) {
         flag_dispHelp = true;
+        return true;
+    } else if (std.mem.eql(u8, option, "logical")) {
+        flag_logical = true;
+        flag_physical = false;
+        return true;
+    } else if (std.mem.eql(u8, option, "physical")) {
+        flag_logical = false;
+        flag_physical = true;
         return true;
     }
 
@@ -141,14 +142,12 @@ pub fn main() !u8 {
     try cli.args.appendToArrayList(&args, heapalloc);
     const exe_name = args.items[0];
 
-    var n_unprocessed: usize = 0;
+    const cwd = std.fs.cwd();
+    _ = cwd;
     for (args.items[1..]) |arg| {
         // Move anything that isn't a valid option to the beginning of args - take the bottom
-        // slice for use as unprocessed_args later
-        if (!test_option_validity_and_store(arg)) {
-            args.items[n_unprocessed] = arg;
-            n_unprocessed += 1;
-        }
+        // slice for use as filenames later
+        _ = test_option_validity_and_store(arg);
 
         // do this in the loop to allow early exit
         if (flag_dispHelp) {
@@ -160,12 +159,13 @@ pub fn main() !u8 {
             return EXIT_SUCCESS;
         }
     }
-    const unprocessed_args = args.items[0..n_unprocessed];
-    _ = unprocessed_args;
 
-    var hostname_buffer: [std.posix.HOST_NAME_MAX]u8 = undefined;
-    const hostname = try std.posix.gethostname(&hostname_buffer);
-    try stdout.print("{s}\n", .{hostname});
+    var path_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    var cwd_path: []u8 = undefined;
+    //cwd_path = try cwd.realpath(".", &path_buffer);
+    //cwd_path = try std.os.getcwd(&path_buffer);
+    cwd_path = try std.process.getCwd(&path_buffer);
+    try stdout.print("{s}\n", .{cwd_path});
 
     return EXIT_SUCCESS;
 }

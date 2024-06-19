@@ -2,62 +2,56 @@ const library = @import("./zcorecommon/library.zig");
 const util = @import("./zcorecommon/util.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
+const za = @import("zargh");
 
 var stdout: std.fs.File.Writer = undefined;
 
-const base_exe_name = "zfalse";
 const EXIT_FAILURE: u8 = 1;
 
+const zfalseContext = struct {
+    const Self = @This();
+    const base_exe_name = "zfalse";
 
-pub fn print_usage(exe_name: []const u8) !void {
-    try stdout.print(
-        \\Usage: {0s} [ignored command line arguments]
-        \\  or:  {0s} OPTION
-        \\Exit with a status code indicating failure.
-        \\
-        \\      --help     display this help and exit
-        \\      --version  output version information and exit
-        \\
-        \\NOTE: your shell may have its own version of false, which usually supersedes
-        \\the version described here.  Please refer to your shell's documentation
-        \\for details about the options it supports.
-        \\
-        , .{ exe_name}
-    );
-}
+    exe_name: []const u8 = Self.base_exe_name,
 
-var flag_dispVersion = false;
-var flag_dispHelp = false;
+    help: za.Option = .{
+        .long = "help",
+        .help = "display this help and exit",
+        .action = dispUsage,
+    },
+    version: za.Option = .{
+        .long = "version",
+        .help = "output version information and exit",
+        .action = dispVersion,
+    },
 
-var ignore_options = false;
-pub fn test_option_validity_and_store(str: []const u8) bool {
-    if(ignore_options){
-        return false;
-    }
-    if(std.mem.startsWith(u8, str, "--")){
-        return test_long_option_validity_and_store(str);
-    }
-    return false;
-}
+    pub fn dispUsage(ctx: *anyopaque, opt: *za.Option) void {
+        _ = opt;
+        const c: *@This() = @alignCast(@ptrCast(ctx));
+        stdout.print(
+            \\Usage: {0s} [ignored command line arguments]
+            \\  or:  {0s} OPTION
+            \\Exit with a status code indicating failure.
+            \\
+        , .{c.exe_name}) catch {};
+        stdout.print("{s}\r\n", .{za.Parser(Self).helpstr}) catch {};
+        stdout.print(
+            \\
+            \\NOTE: your shell may have its own version of {s}, which usually supersedes
+            \\the version described here.  Please refer to your shell's documentation
+            \\for details about the options it supports.
+            \\
+        , .{c.exe_name}) catch {};
 
-pub fn test_long_option_validity_and_store(str: []const u8) bool {
-    // this function only gets called when str starts with "--"
-    if(std.mem.eql(u8, str, "--")){
-        ignore_options = true;
-        return true;
+        c.help.flag = true;
     }
-    var option = str[2..];
-    if(std.mem.eql(u8, option, "version")){
-        flag_dispVersion = true;
-        return true;
+    pub fn dispVersion(ctx: *anyopaque, opt: *za.Option) void {
+        _ = opt;
+        const c: *@This() = @alignCast(@ptrCast(ctx));
+        stdout.print("version=xxx\r\n", .{}) catch {};
+        c.version.flag = true;
     }
-    else if(std.mem.eql(u8, option, "help")){
-        flag_dispHelp = true;
-        return true;
-    }
-    return false;
-}
-
+};
 
 pub fn main() !u8 {
     stdout = std.io.getStdOut().writer();
@@ -65,21 +59,18 @@ pub fn main() !u8 {
     defer arena.deinit();
     const heapalloc = arena.allocator();
 
+    var args = try za.getArgs(heapalloc);
 
-    var args = std.ArrayList([]const u8).init(heapalloc);
-    try cli.args.appendToArrayList(&args, heapalloc);
-    var exe_name = args.items[0];
+    var ctx = zfalseContext{};
+    var parser = za.Parser(zfalseContext).init(&ctx);
+    ctx.exe_name = args.items[0];
 
-    for(args.items[1..]) |arg| {
-        _ = test_option_validity_and_store(arg);
+    for (args.items[1..]) |arg| {
+        _ = parser.parse(arg) catch {};
+        if (ctx.help.flag or ctx.version.flag) {
+            return EXIT_FAILURE;
+        }
     }
 
-    if(flag_dispHelp){
-        try print_usage(exe_name);
-    }
-    else if(flag_dispVersion){
-        try library.print_exe_version(stdout, base_exe_name);
-    }
-    
     return EXIT_FAILURE;
 }

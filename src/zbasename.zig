@@ -2,122 +2,89 @@ const library = @import("./zcorecommon/library.zig");
 const util = @import("./zcorecommon/util.zig");
 const cli = @import("./zcorecommon/cli.zig");
 const std = @import("std");
+const za = @import("zargh");
 
 var stdout: std.fs.File.Writer = undefined;
 var stderr: std.fs.File.Writer = undefined;
 
-
-const base_exe_name = "TEMPLATE FIXME TODO";
 const EXIT_FAILURE: u8 = 1;
 const EXIT_SUCCESS: u8 = 0;
 
-pub fn print_usage(exe_name: []const u8) !void {
-    try stdout.print(
-        \\Usage: {0s} NAME [SUFFIX]
-        \\  or:  {0s} OPTION... NAME...
-        \\Print NAME with any leading directory components removed.
-        \\If specified, also remove a trailing SUFFIX.
-        \\
-        \\Mandatory arguments to long options are mandatory for short options too.
-        \\  -a, --multiple       support multiple arguments and treat each as a NAME
-        \\  -s, --suffix=SUFFIX  remove a trailing SUFFIX; implies -a
-        \\  -z, --zero           end each output line with NUL, not newline
-        \\      --help     display this help and exit
-        \\      --version  output version information and exit
-        \\
-        \\Examples:
-        \\  basename /usr/bin/sort          -> "sort"
-        \\  basename include/stdio.h .h     -> "stdio"
-        \\  basename -s .h include/stdio.h  -> "stdio"
-        \\  basename -a any/str1 any/str2   -> "str1" followed by "str2"
-        \\
-        , .{ exe_name}
-    );
-}
+pub const zbasenameContext = struct {
+    const Self = @This();
+    const base_exe_name = "zbasename";
 
-const ExpectedOptionValType = enum { none, suffix };
-var expected_option: ExpectedOptionValType = .none;
+    exe_name: []const u8 = Self.base_exe_name,
 
-var flag_dispVersion = false;
-var flag_dispHelp = false;
-var flag_multiple = false;
+    help: za.Option = .{
+        .long = "help",
+        .help = "display this help and exit",
+        .action = dispUsage,
+    },
+    version: za.Option = .{
+        .long = "version",
+        .help = "output version information and exit",
+        .action = dispVersion,
+    },
+    multiple: za.Option = .{
+        .short = 'a',
+        .long = "multiple",
+        .help = "support multiple arguments and treat each as a NAME",
+        .action = za.Option.Actions.flagTrue,
+    },
+    suffix: za.Option = .{
+        .short = 's',
+        .long = "suffix",
+        .help = "remove a trailing SUFFIX; implies -a",
+        .action = setSuffix,
+        .argument = .required,
+        .value = "",
+    },
+    zero: za.Option = .{
+        .short = 'z',
+        .long = "zero",
+        .help = "end each output line with NUL, not newline",
+        .action = za.Option.Actions.flagTrue,
+    },
 
-var suffix: []const u8 = "";
-var separator: u8 = '\n';
-
-var ignore_options = false;
-pub fn test_option_validity_and_store(str: []const u8) bool {
-    if(ignore_options){
-        return false;
-    }
-    else if(expected_option != .none){
-        switch(expected_option){
-            .none   => {},
-            .suffix => { suffix = str; },
-        }
-        expected_option = .none;
-        return true;
-    }
-    else if(std.mem.startsWith(u8, str, "--")){
-        return test_long_option_validity_and_store(str);
-    }
-    else if(std.mem.startsWith(u8, str, "-") and str.len > 1){
-        var all_chars_valid_flags = true;
-        for(str[1..]) |ch| {
-            switch(ch){
-                'a', 's', 'z' => {},
-                else => { all_chars_valid_flags = false; },
-            }
-        }
-
-        if(!all_chars_valid_flags){
-            return false;
-        }
-
-        for(str[1..]) |ch| {
-            switch(ch){
-                'a' => { flag_multiple = true; },
-                's' => { flag_multiple = true; expected_option = .suffix; },
-                'z' => { separator = '\x00'; },
-                else => unreachable,
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-pub fn test_long_option_validity_and_store(str: []const u8) bool {
-    // this function only gets called when str starts with "--"
-    if(std.mem.eql(u8, str, "--")){
-        ignore_options = true;
-        return true;
+    pub fn setSuffix(ctx: *anyopaque, opt: *za.Option) void {
+        _ = opt;
+        var c: *@This() = @alignCast(@ptrCast(ctx));
+        c.suffix.flag = true;
+        c.multiple.flag = true;
     }
 
-    var option = str[2..];
-    if(std.mem.eql(u8, option, "version")){
-        flag_dispVersion = true;
-        return true;
-    }
-    else if(std.mem.eql(u8, option, "help")){
-        flag_dispHelp = true;
-        return true;
-    }
-    else if(std.mem.eql(u8, option, "multiple")){
-        flag_multiple = true;
-        return true;
-    }
-    else if(std.mem.eql(u8, option, "zero")){
-        separator = '\x00';
-        return true;
-    }
-    else if(std.mem.startsWith(u8, option, "suffix=")){
-        suffix = option[7..];
-        return true;
-    }
+    pub fn dispUsage(ctx: *anyopaque, opt: *za.Option) void {
+        _ = opt;
+        const c: *@This() = @alignCast(@ptrCast(ctx));
+        stdout.print(
+            \\Usage: {0s} NAME [SUFFIX]
+            \\  or:  {0s} OPTION... NAME...
+            \\Print NAME with any leading directory components removed.
+            \\If specified, also remove a trailing SUFFIX.
+            \\
+            \\Mandatory arguments to long options are mandatory for short options too.
+            \\
+        , .{c.exe_name}) catch {};
+        stdout.print("{s}\r\n", .{za.Parser(Self).helpstr}) catch {};
+        stdout.print(
+            \\Examples:
+            \\  {0s} /usr/bin/sort          -> "sort"
+            \\  {0s} include/stdio.h .h     -> "stdio"
+            \\  {0s} -s .h include/stdio.h  -> "stdio"
+            \\  {0s} -a any/str1 any/str2   -> "str1" followed by "str2"
+            \\
+        , .{c.exe_name}) catch {};
 
-    return false;
-}
+        c.help.flag = true;
+    }
+    pub fn dispVersion(ctx: *anyopaque, opt: *za.Option) void {
+        _ = opt;
+        const c: *@This() = @alignCast(@ptrCast(ctx));
+        stdout.print("version=xxx\r\n", .{}) catch {};
+        c.version.flag = true;
+    }
+};
 
 pub fn main() !u8 {
     stdout = std.io.getStdOut().writer();
@@ -127,43 +94,74 @@ pub fn main() !u8 {
     defer arena.deinit();
     const heapalloc = arena.allocator();
 
+    var args = try za.getArgs(heapalloc);
 
-    var args = std.ArrayList([]const u8).init(heapalloc);
-    try cli.args.appendToArrayList(&args, heapalloc);
-    var exe_name = args.items[0];
+    var ctx = zbasenameContext{};
+    var parser = za.Parser(zbasenameContext).init(&ctx);
+    ctx.exe_name = args.items[0];
 
     var nfilenames: usize = 0;
-    for(args.items[1..]) |arg| {
+    for (args.items[1..]) |arg| {
         // Move anything that isn't a valid option to the beginning of args - take the bottom
         // slice for use as filenames later
-        if(!test_option_validity_and_store(arg)){
-            args.items[nfilenames] = arg;
-            nfilenames += 1;
+        if (parser.parse(arg)) |isValidOpt| {
+            if (!isValidOpt) {
+                // end options parsing when first non-option argument is detected
+                parser.ignore_options = true;
+                args.items[nfilenames] = arg;
+                nfilenames += 1;
+            }
+        } else |err| switch (err) {
+            error.InvalidLongOption => {
+                try stderr.print("{s}: invalid long option '{s}'\r\n", .{ ctx.exe_name, arg });
+                return EXIT_FAILURE;
+            },
+            error.InvalidShortOption => {
+                try stderr.print("{s}: invalid short option '{s}'\r\n", .{ ctx.exe_name, arg });
+                return EXIT_FAILURE;
+            },
+            error.UnexpectedArgument => {
+                try stderr.print("{s}: option '{s}' has unexpected argument\r\n", .{ ctx.exe_name, arg });
+                return EXIT_FAILURE;
+            },
         }
 
         // do this in the loop to allow early exit
-        if(flag_dispHelp){
-            try print_usage(exe_name);
+        if (ctx.help.flag) {
             return EXIT_SUCCESS;
         }
-        if(flag_dispVersion){
-            try library.print_exe_version(stdout, base_exe_name);
+        if (ctx.version.flag) {
             return EXIT_SUCCESS;
         }
     }
-    if(!flag_multiple) { nfilenames = @min(1, nfilenames); }
+
     var filenames = args.items[0..nfilenames];
 
-    if (filenames.len == 0){
-        try stdout.print("{s}: missing operand", .{exe_name});
-        try stdout.print("Try '{s} --help' for more information.", .{exe_name});
+    if (filenames.len == 0) {
+        try stdout.print("{s}: missing operand\r\n", .{ctx.exe_name});
+        try stdout.print("Try '{s} --help' for more information.\r\n", .{ctx.exe_name});
         return EXIT_FAILURE;
     }
 
-    for(filenames) |filename| {
+    if (!ctx.multiple.flag) switch (nfilenames) {
+        1 => {},
+        2 => {
+            ctx.suffix.value = filenames[1];
+            filenames = filenames[0..1];
+        },
+        else => {
+            try stdout.print("{s}: extra operand '{s}'\r\n", .{ ctx.exe_name, filenames[2] });
+            try stdout.print("Try '{s} --help' for more information.\r\n", .{ctx.exe_name});
+            return EXIT_FAILURE;
+        },
+    };
+
+    const separator: u8 = if (ctx.zero.flag) '\x00' else '\n';
+
+    for (filenames) |filename| {
         var f: []const u8 = std.fs.path.basename(filename);
-        if(std.mem.endsWith(u8, filename, suffix)){
-            f = f[0..f.len - suffix.len];
+        if (std.mem.endsWith(u8, filename, ctx.suffix.value.?)) {
+            f = f[0 .. f.len - ctx.suffix.value.?.len];
         }
         try stdout.print("{s}{c}", .{ f, separator });
     }

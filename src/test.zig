@@ -15,8 +15,12 @@ pub fn makePath(self: std.fs.Dir, sub_path: []const u8) !void {
                 // stat the file and return an error if it's not a directory
                 // this is important because otherwise a dangling symlink
                 // could cause an infinite loop
-                var fstat = self.statFile(sub_path) catch { return err; };
-                if(fstat.kind != .directory){ return error.NotDir; }
+                const fstat = self.statFile(sub_path) catch {
+                    return err;
+                };
+                if (fstat.kind != .directory) {
+                    return error.NotDir;
+                }
             },
             error.FileNotFound => |e| {
                 component = it.previous() orelse return e;
@@ -33,24 +37,23 @@ pub fn main() !void {
 
     var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&buf);
-    var buf_alloc = fba.allocator();
+    const buf_alloc = fba.allocator();
 
     var tmp = tmpDir(.{});
     defer tmp.cleanup();
-    
+
     try tmp.dir.makeDir("foo");
     var foo = try tmp.dir.openDir("foo", .{});
     defer foo.close();
     var bar = try foo.createFile("bar", .{});
     defer bar.close();
 
-    var sub_path = try std.fs.path.join(buf_alloc, &[_][]const u8{"foo", "bar", "baz"});
-
+    const sub_path = try std.fs.path.join(buf_alloc, &[_][]const u8{ "foo", "bar", "baz" });
 
     try stdout.print("tmp -> '{s}'\n", .{sub_path});
     //try tmp.dir.makePath(sub_path);
 
-    var path = try tmp.dir.realpath(".", &buf);
+    const path = try tmp.dir.realpath(".", &buf);
     try stdout.print("tmp -> '{s}'\n", .{path});
 
     //var filename = "a";
@@ -88,7 +91,7 @@ pub fn tmpDir(opts: std.fs.Dir.OpenDirOptions) TmpDir {
     defer cache_dir.close();
     var parent_dir = cache_dir.makeOpenPath("tmp", .{}) catch
         @panic("unable to make tmp dir for testing: unable to make and open zig-cache/tmp dir");
-    var dir = parent_dir.makeOpenPath(&sub_path, opts) catch
+    const dir = parent_dir.makeOpenPath(&sub_path, opts) catch
         @panic("unable to make tmp dir for testing: unable to make and open the tmp dir");
 
     return .{
@@ -98,23 +101,21 @@ pub fn tmpDir(opts: std.fs.Dir.OpenDirOptions) TmpDir {
     };
 }
 
-
-
 test "makePath but sub_path contains pre-existing file" {
     // makePath tmp/foo/bar/baz, but bar is a file
     var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&buf);
-    var buf_alloc = fba.allocator();
+    const buf_alloc = fba.allocator();
 
     var tmp = tmpDir(.{});
     defer tmp.cleanup();
-    
+
     try tmp.dir.makeDir("foo");
     var foo = try tmp.dir.openDir("foo", .{});
     defer foo.close();
     var bar = try foo.createFile("bar", .{});
     defer bar.close();
 
-    var sub_path = try std.fs.path.join(buf_alloc, &[_][]const u8{"foo", "bar", "baz"});
+    const sub_path = try std.fs.path.join(buf_alloc, &[_][]const u8{ "foo", "bar", "baz" });
     try testing.expectError(error.NotDir, tmp.dir.makePath(sub_path));
 }

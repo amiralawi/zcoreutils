@@ -94,7 +94,7 @@ pub fn print_summary(s: wc_summary) !void {
 
     var prefix: []const u8 = "";
     if (flag_lines) {
-        var len = get_print_len(s.lines);
+        const len = get_print_len(s.lines);
         for (0..maxlen - len) |_| {
             try stdout.print(" ", .{});
         }
@@ -102,7 +102,7 @@ pub fn print_summary(s: wc_summary) !void {
         prefix = " ";
     }
     if (flag_words) {
-        var len = get_print_len(s.words);
+        const len = get_print_len(s.words);
         for (0..maxlen - len) |_| {
             try stdout.print(" ", .{});
         }
@@ -110,7 +110,7 @@ pub fn print_summary(s: wc_summary) !void {
         prefix = " ";
     }
     if (flag_chars) {
-        var len = get_print_len(s.chars);
+        const len = get_print_len(s.chars);
         for (0..maxlen - len) |_| {
             try stdout.print(" ", .{});
         }
@@ -118,7 +118,7 @@ pub fn print_summary(s: wc_summary) !void {
         prefix = " ";
     }
     if (flag_bytes) {
-        var len = get_print_len(s.bytes);
+        const len = get_print_len(s.bytes);
         for (0..maxlen - len) |_| {
             try stdout.print(" ", .{});
         }
@@ -126,7 +126,7 @@ pub fn print_summary(s: wc_summary) !void {
         prefix = " ";
     }
     if (flag_maxlinelen) {
-        var len = get_print_len(s.maxlinelen);
+        const len = get_print_len(s.maxlinelen);
         for (0..maxlen - len) |_| {
             try stdout.print(" ", .{});
         }
@@ -205,7 +205,7 @@ pub fn test_long_option_validity_and_store(str: []const u8) bool {
         return true;
     }
 
-    var option = str[2..];
+    const option = str[2..];
     if (util.u8str.cmp(option, "version")) {
         flag_dispVersion = true;
         return true;
@@ -273,8 +273,8 @@ pub fn wc_file(file: std.fs.File) !wc_summary {
 
     // TODO - investigate whether chars refers to unicode characters vs printable ascii
     while (!finished) {
-        var nread = try file.read(&buffer);
-        var readslice = buffer[0..nread];
+        const nread = try file.read(&buffer);
+        const readslice = buffer[0..nread];
 
         for (readslice, s.bytes..) |ch, i| {
             s.bytes += 1;
@@ -423,7 +423,7 @@ pub fn report_exe_error(err: anyerror, filename: []const u8, exe_name: []const u
 pub fn main() !u8 {
     stdout = std.io.getStdOut().writer();
     stderr = std.io.getStdErr().writer();
-    var stdin = std.io.getStdIn();
+    const stdin = std.io.getStdIn();
 
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -431,7 +431,7 @@ pub fn main() !u8 {
 
     var args = std.ArrayList([]const u8).init(heapalloc);
     try cli.args.appendToArrayList(&args, heapalloc);
-    var exe_name = args.items[0];
+    const exe_name = args.items[0];
 
     var nfilenames: usize = 0;
     for (args.items[1..]) |arg| {
@@ -452,7 +452,7 @@ pub fn main() !u8 {
             return EXIT_SUCCESS;
         }
     }
-    var filenames = args.items[0..nfilenames];
+    const filenames = args.items[0..nfilenames];
 
     if (flag_defaults) {
         set_defaults();
@@ -460,7 +460,7 @@ pub fn main() !u8 {
 
     if (filenames.len == 0) {
         // use standard input
-        var summary = wc_file(stdin);
+        const summary = wc_file(stdin);
         if (summary) |summary_unwrapped| {
             var s = summary_unwrapped;
             s.name = "";
