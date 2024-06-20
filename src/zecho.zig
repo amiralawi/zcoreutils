@@ -4,47 +4,10 @@ const std = @import("std");
 const za = @import("zargh");
 
 var stdout: std.fs.File.Writer = undefined;
+var stderr: std.fs.File.Writer = undefined;
 
-var append_newline = false;
-var handle_escapes = false;
-var args: std.ArrayList([]const u8) = undefined;
-var args_to_print: std.ArrayList([]const u8) = undefined;
-
-fn parse_cli_args() !void {
-    for (args.items[1..]) |arg| {
-        if (std.mem.startsWith(u8, arg, "-")) {
-            var arg_is_printable = false;
-            var loop_newline = append_newline;
-            var loop_escapes = handle_escapes;
-
-            for (arg[1..]) |ch| {
-                switch (ch) {
-                    'n' => {
-                        loop_newline = true;
-                    },
-                    'e' => {
-                        loop_escapes = true;
-                    },
-                    'E' => {
-                        loop_escapes = false;
-                    },
-                    else => {
-                        arg_is_printable = true;
-                    },
-                }
-            }
-
-            if (arg_is_printable) {
-                try args_to_print.append(arg);
-            } else {
-                append_newline = loop_newline;
-                handle_escapes = loop_escapes;
-            }
-        } else {
-            try args_to_print.append(arg);
-        }
-    }
-}
+const EXIT_FAILURE: u8 = 1;
+const EXIT_SUCCESS: u8 = 0;
 
 const escape_state = enum {
     unescaped,
@@ -216,90 +179,145 @@ pub fn print_dangling_escape_sequences() !void {
     }
 }
 
-pub fn main() !void {
-    //old
-    // stdout = std.io.getStdOut().writer();
+const zsleepContext = struct {
+    const Self = @This();
+    const base_exe_name = "zecho";
 
-    // var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    // defer arena.deinit();
+    exe_name: []const u8 = Self.base_exe_name,
 
-    // const ebuff_alloc = ebuffer_fba.allocator();
-    // ebuffer = try std.RingBuffer.init(ebuff_alloc, 16);
-    // defer ebuffer.deinit(ebuff_alloc);
+    suppressNewline: za.Option = .{
+        .short = 'n',
+        .help = "do not output the trailing newline",
+        .action = za.Option.Actions.flagTrue,
+    },
+    handleEscapes: za.Option = .{
+        .short = 'e',
+        .help = "enable interpretation of backslash escapes",
+        .action = za.Option.Actions.flagTrue,
+    },
+    clearEscapes: za.Option = .{
+        .short = 'E',
+        .help = "disable interpretation of backslash escapes (default)",
+        .action = clearHandleEscapes,
+    },
+    help: za.Option = .{
+        .long = "help",
+        .help = "display this help and exit",
+        .action = dispUsage,
+    },
+    version: za.Option = .{
+        .long = "version",
+        .help = "output version information and exit",
+        .action = dispVersion,
+    },
 
-    // const allocator = arena.allocator();
+    pub fn clearHandleEscapes(ctx: *anyopaque, opt: *za.Option) void {
+        _ = opt;
+        const c: *@This() = @alignCast(@ptrCast(ctx));
+        c.handleEscapes.flag = false;
+    }
+    pub fn dispUsage(ctx: *anyopaque, opt: *za.Option) void {
+        _ = opt;
+        const c: *@This() = @alignCast(@ptrCast(ctx));
+        stdout.print(
+            \\Usage: {0s} [SHORT-OPTION]... [STRING]...
+            \\  or:  {0s} LONG-OPTION
+            \\Echo the STRING(s) to standard output.
+            \\
+        , .{c.exe_name}) catch {};
 
-    // // get CLI args
-    // args = std.ArrayList([]const u8).init(allocator);
-    // args_to_print = std.ArrayList([]const u8).init(allocator);
-    // try cli.args.appendToArrayList(&args, allocator);
+        stdout.print("{s}\r\n", .{za.Parser(Self).helpstr}) catch {};
+        stdout.print(
+            \\
+            \\If -e is in effect, the following sequences are recognized:
+            \\
+            \\  \\\\      backslash
+            \\  \\a      alert (BEL)
+            \\  \\b      backspace
+            \\  \\c      produce no further output
+            \\  \\e      escape
+            \\  \\f      form feed
+            \\  \\n      new line
+            \\  \\r      carriage return
+            \\  \\t      horizontal tab
+            \\  \\v      vertical tab
+            \\  \\0NNN   byte with octal value NNN (1 to 3 digits)
+            \\  \\xHH    byte with hexadecimal value HH (1 to 2 digits)
+            \\
+            \\NOTE: your shell may have its own version of {s}, which usually supersedes
+            \\the version described here.  Please refer to your shell's documentation
+            \\for details about the options it supports.
+        , .{c.exe_name}) catch {};
 
-    // try parse_cli_args();
-    // const n_printable = args_to_print.items.len;
+        c.help.flag = true;
+    }
+    pub fn dispVersion(ctx: *anyopaque, opt: *za.Option) void {
+        _ = opt;
+        const c: *@This() = @alignCast(@ptrCast(ctx));
+        stdout.print("version=xxx\r\n", .{}) catch {};
+        c.version.flag = true;
+    }
+};
 
-    // // dumb path
-    // if (!handle_escapes) {
-    //     for (args_to_print.items, 1..) |arg, index| {
-    //         const suffix = if (index == n_printable) "" else " ";
-    //         try stdout.print("{s}{s}", .{ arg, suffix });
-    //     }
-    //     if (append_newline == false) {
-    //         try stdout.print("\n", .{});
-    //     }
-    //     return;
-    // }
-
-    // // escape sequence path
-    // for (args_to_print.items, 1..) |arg, index| {
-    //     const suffix = if (index == n_printable) "" else " ";
-
-    //     for (arg) |ch| {
-    //         try process_char(ch);
-    //     }
-
-    //     try print_dangling_escape_sequences();
-
-    //     try stdout.print("{s}", .{suffix});
-    // }
-
-    // if (append_newline == false and suppress_flag == false) {
-    //     try stdout.print("\n", .{});
-    // }
-
+pub fn main() !u8 {
     stdout = std.io.getStdOut().writer();
-
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
+    stderr = std.io.getStdErr().writer();
 
     const ebuff_alloc = ebuffer_fba.allocator();
     ebuffer = try std.RingBuffer.init(ebuff_alloc, 16);
     defer ebuffer.deinit(ebuff_alloc);
 
-    const allocator = arena.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const heapalloc = arena.allocator();
 
-    // get CLI args
-    args = try za.getArgs(allocator);
-    //args = std.ArrayList([]const u8).init(allocator);
-    //args_to_print = std.ArrayList([]const u8).init(allocator);
-    //try cli.args.appendToArrayList(&args, allocator);
+    var args = try za.getArgs(heapalloc);
+    var ctx = zsleepContext{};
+    var parser = za.Parser(zsleepContext).init(&ctx);
+    ctx.exe_name = args.items[0];
 
-    try parse_cli_args();
-    const n_printable = args_to_print.items.len;
+    var n_printable: usize = 0;
+    for (args.items[1..]) |arg| {
+        if (parser.parse(arg)) |isValidOpt| {
+            if (!isValidOpt) {
+                args.items[n_printable] = arg;
+                n_printable += 1;
+            }
+        } else |err| switch (err) {
+            error.InvalidLongOption => {
+                try stderr.print("{s}: invalid long option '{s}'\r\n", .{ ctx.exe_name, arg });
+                try stderr.print("Try '{s} --help' for more information.\n", .{ctx.exe_name});
+                return EXIT_FAILURE;
+            },
+            error.InvalidShortOption => {
+                try stderr.print("{s}: invalid short option '{s}'\r\n", .{ ctx.exe_name, arg });
+                try stderr.print("Try '{s} --help' for more information.\n", .{ctx.exe_name});
+                return EXIT_FAILURE;
+            },
+            error.UnexpectedArgument => {
+                try stderr.print("{s}: option '{s}' has unexpected argument\r\n", .{ ctx.exe_name, arg });
+                try stderr.print("Try '{s} --help' for more information.\n", .{ctx.exe_name});
+                return EXIT_FAILURE;
+            },
+        }
+    }
+
+    const args_to_print = args.items[0..n_printable];
 
     // dumb path
-    if (!handle_escapes) {
-        for (args_to_print.items, 1..) |arg, index| {
+    if (!ctx.handleEscapes.flag) {
+        for (args_to_print, 1..) |arg, index| {
             const suffix = if (index == n_printable) "" else " ";
             try stdout.print("{s}{s}", .{ arg, suffix });
         }
-        if (append_newline == false) {
+        if (ctx.suppressNewline.flag == false) {
             try stdout.print("\n", .{});
         }
-        return;
+        return EXIT_SUCCESS;
     }
 
     // escape sequence path
-    for (args_to_print.items, 1..) |arg, index| {
+    for (args_to_print, 1..) |arg, index| {
         const suffix = if (index == n_printable) "" else " ";
 
         for (arg) |ch| {
@@ -311,7 +329,9 @@ pub fn main() !void {
         try stdout.print("{s}", .{suffix});
     }
 
-    if (append_newline == false and suppress_flag == false) {
+    if (ctx.suppressNewline.flag == false) {
         try stdout.print("\n", .{});
     }
+
+    return EXIT_SUCCESS;
 }

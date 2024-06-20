@@ -21,10 +21,10 @@ In order of (approximate) precedence:
 | zfalse    | 100%        | yes      | 
 | ztrue     | 100%        | yes      | 
 | zyes      | 100%        | yes      | 
-| zsleep    | 99%         |          | need to check error handling, return codes
+| zsleep    | 99%         | yes      | need to check error handling, return codes
 | zcksum    | 99%         |          | need to check error handling, return codes
 | zrmdir    | 99%         |          | need to check error handling, return codes
-| zecho     | 95%         |          | does not currently support \e, \E, \u, \U
+| zecho     | 95%         | yes      | does not currently support \e, \E, \u, \U
 | zrm       | 90%         | yes      | Missing -I resurive prompting. Does not implement: --no-preserve-root, --preserve-root=all, --one-file-system
 | zhead     | 85%         |          | does not support: long --bytes and --lines options, negative bytecount/linecount
 | zwc       | 80%         |          | probably implements bytes-vs-chars incorrectly, does not implement --files0-from=F

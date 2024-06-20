@@ -39,7 +39,6 @@ pub fn build(b: *std.Build) void {
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
-    b.installArtifact(exe);
 
     // additional executables
     const exe_zecho = b.addExecutable(.{
@@ -49,8 +48,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    exe_zecho.root_module.addImport("zargh", zargh.module("zargh"));
-    b.installArtifact(exe_zecho);
 
     const exe_zhead = b.addExecutable(.{
         .name = "zhead",
@@ -59,7 +56,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zhead);
 
     const exe_ztail = b.addExecutable(.{
         .name = "ztail",
@@ -68,7 +64,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_ztail);
 
     const exe_zcat = b.addExecutable(.{
         .name = "zcat",
@@ -77,7 +72,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zcat);
 
     const exe_ztouch = b.addExecutable(.{
         .name = "ztouch",
@@ -86,7 +80,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_ztouch);
 
     const exe_zmkdir = b.addExecutable(.{
         .name = "zmkdir",
@@ -95,7 +88,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zmkdir);
 
     const exe_zrm = b.addExecutable(.{
         .name = "zrm",
@@ -104,8 +96,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    exe_zrm.root_module.addImport("zargh", zargh.module("zargh"));
-    b.installArtifact(exe_zrm);
 
     const exe_zrmdir = b.addExecutable(.{
         .name = "zrmdir",
@@ -113,7 +103,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    b.installArtifact(exe_zrmdir);
 
     const exe_zcp = b.addExecutable(.{
         .name = "zcp",
@@ -122,7 +111,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zcp);
 
     const exe_zmv = b.addExecutable(.{
         .name = "zmv",
@@ -131,7 +119,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zmv);
 
     const exe_zsleep = b.addExecutable(.{
         .name = "zsleep",
@@ -140,7 +127,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zsleep);
 
     const exe_zcksum = b.addExecutable(.{
         .name = "zcksum",
@@ -149,7 +135,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zcksum);
 
     const exe_zwc = b.addExecutable(.{
         .name = "zwc",
@@ -158,7 +143,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zwc);
 
     const exe_ztee = b.addExecutable(.{
         .name = "ztee",
@@ -167,7 +151,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_ztee);
 
     const exe_zyes = b.addExecutable(.{
         .name = "zyes",
@@ -176,8 +159,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    exe_zyes.root_module.addImport("zargh", zargh.module("zargh"));
-    b.installArtifact(exe_zyes);
 
     const exe_zcomm = b.addExecutable(.{
         .name = "zcomm",
@@ -186,7 +167,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zcomm);
 
     const exe_ztrue = b.addExecutable(.{
         .name = "ztrue",
@@ -195,8 +175,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    exe_ztrue.root_module.addImport("zargh", zargh.module("zargh"));
-    b.installArtifact(exe_ztrue);
 
     const exe_zfalse = b.addExecutable(.{
         .name = "zfalse",
@@ -205,8 +183,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    exe_zfalse.root_module.addImport("zargh", zargh.module("zargh"));
-    b.installArtifact(exe_zfalse);
 
     const exe_zhostname = b.addExecutable(.{
         .name = "zhostname",
@@ -215,7 +191,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zhostname);
 
     const exe_zhostid = b.addExecutable(.{
         .name = "zhostid",
@@ -224,7 +199,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zhostid);
 
     const exe_zseq = b.addExecutable(.{
         .name = "zseq",
@@ -233,7 +207,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zseq);
 
     const exe_zbasename = b.addExecutable(.{
         .name = "zbasename",
@@ -242,8 +215,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    exe_zbasename.root_module.addImport("zargh", zargh.module("zargh"));
-    b.installArtifact(exe_zbasename);
 
     const exe_zbase64 = b.addExecutable(.{
         .name = "zbase64",
@@ -252,7 +223,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zbase64);
 
     const exe_zpwd = b.addExecutable(.{
         .name = "zpwd",
@@ -261,7 +231,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zpwd);
 
     const exe_zfold = b.addExecutable(.{
         .name = "zfold",
@@ -270,7 +239,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_zfold);
 
     const exe__working = b.addExecutable(.{
         .name = "_working",
@@ -279,7 +247,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe__working);
 
     // const exe__argparse = b.addExecutable(.{
     //     .name = "_argparse",
@@ -297,7 +264,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
-    b.installArtifact(exe_argparse);
 
     // const exe_zwget = b.addExecutable(.{
     //     .name = "zwget",
@@ -319,6 +285,65 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = single_threaded,
     });
+
+    exe.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zecho.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zhead.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_ztail.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zcat.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_ztouch.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zmkdir.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zrm.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zrmdir.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zcp.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zmv.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zsleep.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zcksum.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zwc.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_ztee.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zyes.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zcomm.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_ztrue.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zfalse.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zhostname.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zhostid.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zseq.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zbasename.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zbase64.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zpwd.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_zfold.root_module.addImport("zargh", zargh.module("zargh"));
+    exe__working.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_argparse.root_module.addImport("zargh", zargh.module("zargh"));
+    exe_test.root_module.addImport("zargh", zargh.module("zargh"));
+
+    b.installArtifact(exe);
+    b.installArtifact(exe_zecho);
+    b.installArtifact(exe_zhead);
+    b.installArtifact(exe_ztail);
+    b.installArtifact(exe_zcat);
+    b.installArtifact(exe_ztouch);
+    b.installArtifact(exe_zmkdir);
+    b.installArtifact(exe_zrm);
+    b.installArtifact(exe_zrmdir);
+    b.installArtifact(exe_zcp);
+    b.installArtifact(exe_zmv);
+    b.installArtifact(exe_zsleep);
+    b.installArtifact(exe_zcksum);
+    b.installArtifact(exe_zwc);
+    b.installArtifact(exe_ztee);
+    b.installArtifact(exe_zyes);
+    b.installArtifact(exe_zcomm);
+    b.installArtifact(exe_ztrue);
+    b.installArtifact(exe_zfalse);
+    b.installArtifact(exe_zhostname);
+    b.installArtifact(exe_zhostid);
+    b.installArtifact(exe_zseq);
+    b.installArtifact(exe_zbasename);
+    b.installArtifact(exe_zbase64);
+    b.installArtifact(exe_zpwd);
+    b.installArtifact(exe_zfold);
+    b.installArtifact(exe__working);
+    b.installArtifact(exe_argparse);
     b.installArtifact(exe_test);
 
     // This *creates* a RunStep in the build graph, to be executed when another
