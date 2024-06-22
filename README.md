@@ -31,7 +31,7 @@ In order of (approximate) precedence:
 | ztouch    | 75%         |          | does not implement timestamp/datestamp options, no-dereference, reference
 | zmkdir    | 50%         |          | does not implement context/mode
 | ztee      | 50%         |          | does not implement interrupts
-| zseq      | 50%         |          | does not implement floating-point or equal-width
+| zseq      | 50%         |          | does not implement argument behaviors, negative inputs, NaN
 | ztail     | usable      |          | demonstrator only, prints 10 lines, no CLI option support yet
 | zcat      | usable      |          | demonstrator only, prints full file, no CLI option support yet
 | hostname  | 5%          |          | doesn't take arguments
